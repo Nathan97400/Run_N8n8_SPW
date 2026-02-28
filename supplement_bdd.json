@@ -1,0 +1,1970 @@
+[
+  {
+    "Marque": "Brixton",
+    "Modèle": "BX 125",
+    "Cylindrée (cc)": 125.0,
+    "Année début": 2020.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Brixton",
+    "Modèle": "Cromwell 1200",
+    "Cylindrée (cc)": 1200.0,
+    "Année début": 2020.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Brixton",
+    "Modèle": "Crossfire 500",
+    "Cylindrée (cc)": 486.0,
+    "Année début": 2018.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Brixton",
+    "Modèle": "Crossfire 500 X",
+    "Cylindrée (cc)": 486.0,
+    "Année début": 2022.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Brixton",
+    "Modèle": "Felsberg 1200",
+    "Cylindrée (cc)": 1200.0,
+    "Année début": 2022.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Brixton",
+    "Modèle": "Sunray 125",
+    "Cylindrée (cc)": 125.0,
+    "Année début": 2022.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Fantic",
+    "Modèle": "Caballero 125",
+    "Cylindrée (cc)": 125.0,
+    "Année début": 2020.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Fantic",
+    "Modèle": "Caballero 250",
+    "Cylindrée (cc)": 250.0,
+    "Année début": 2021.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Fantic",
+    "Modèle": "Caballero 500",
+    "Cylindrée (cc)": 450.0,
+    "Année début": 2019.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Fantic",
+    "Modèle": "Caballero 500 Rally",
+    "Cylindrée (cc)": 450.0,
+    "Année début": 2022.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Fantic",
+    "Modèle": "Issimo 125",
+    "Cylindrée (cc)": 125.0,
+    "Année début": 2023.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "GasGas",
+    "Modèle": "EC 250F",
+    "Cylindrée (cc)": 250.0,
+    "Année début": 2021.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "GasGas",
+    "Modèle": "EC 300",
+    "Cylindrée (cc)": 300.0,
+    "Année début": 2021.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "GasGas",
+    "Modèle": "EX 250F",
+    "Cylindrée (cc)": 250.0,
+    "Année début": 2022.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "GasGas",
+    "Modèle": "EX 450F",
+    "Cylindrée (cc)": 450.0,
+    "Année début": 2022.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "GasGas",
+    "Modèle": "TXT GP 300",
+    "Cylindrée (cc)": 300.0,
+    "Année début": 2021.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "GasGas",
+    "Modèle": "TXT Racing 280",
+    "Cylindrée (cc)": 280.0,
+    "Année début": 2021.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Indian",
+    "Modèle": "Challenger",
+    "Cylindrée (cc)": 1768.0,
+    "Année début": 2020.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Indian",
+    "Modèle": "Chief",
+    "Cylindrée (cc)": 1890.0,
+    "Année début": 2022.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Indian",
+    "Modèle": "Chieftain",
+    "Cylindrée (cc)": 1890.0,
+    "Année début": 2014.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Indian",
+    "Modèle": "FTR 1200",
+    "Cylindrée (cc)": 1203.0,
+    "Année début": 2019.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Indian",
+    "Modèle": "Roadmaster",
+    "Cylindrée (cc)": 1890.0,
+    "Année début": 2015.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Indian",
+    "Modèle": "Scout",
+    "Cylindrée (cc)": 1133.0,
+    "Année début": 2015.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Indian",
+    "Modèle": "Scout Bobber",
+    "Cylindrée (cc)": 1133.0,
+    "Année début": 2018.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Indian",
+    "Modèle": "Scout Rogue",
+    "Cylindrée (cc)": 1133.0,
+    "Année début": 2022.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Indian",
+    "Modèle": "Springfield",
+    "Cylindrée (cc)": 1890.0,
+    "Année début": 2016.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Keeway",
+    "Modèle": "K-Light 202",
+    "Cylindrée (cc)": 202.0,
+    "Année début": 2021.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Keeway",
+    "Modèle": "RKF 125",
+    "Cylindrée (cc)": 125.0,
+    "Année début": 2021.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Keeway",
+    "Modèle": "RKS 125",
+    "Cylindrée (cc)": 125.0,
+    "Année début": 2022.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Keeway",
+    "Modèle": "Superlight 125",
+    "Cylindrée (cc)": 125.0,
+    "Année début": 2019.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Mash",
+    "Modèle": "Adventure 400",
+    "Cylindrée (cc)": 400.0,
+    "Année début": 2022.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Mash",
+    "Modèle": "Cafe Racer 125",
+    "Cylindrée (cc)": 125.0,
+    "Année début": 2019.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Mash",
+    "Modèle": "Fifty 125",
+    "Cylindrée (cc)": 125.0,
+    "Année début": 2018.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Mash",
+    "Modèle": "K750",
+    "Cylindrée (cc)": 650.0,
+    "Année début": 2024.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Mash",
+    "Modèle": "Seventy 125",
+    "Cylindrée (cc)": 125.0,
+    "Année début": 2017.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Mash",
+    "Modèle": "X-Ride 400",
+    "Cylindrée (cc)": 400.0,
+    "Année début": 2022.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Mash",
+    "Modèle": "X-Ride 650",
+    "Cylindrée (cc)": 650.0,
+    "Année début": 2023.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Orcal",
+    "Modèle": "Astor 125",
+    "Cylindrée (cc)": 125.0,
+    "Année début": 2022.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Orcal",
+    "Modèle": "NK01",
+    "Cylindrée (cc)": 125.0,
+    "Année début": 2022.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Orcal",
+    "Modèle": "Sprint 125",
+    "Cylindrée (cc)": 125.0,
+    "Année début": 2023.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Voge",
+    "Modèle": "300AC",
+    "Cylindrée (cc)": 296.0,
+    "Année début": 2020.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Voge",
+    "Modèle": "500AC",
+    "Cylindrée (cc)": 471.0,
+    "Année début": 2020.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Voge",
+    "Modèle": "CU625",
+    "Cylindrée (cc)": 578.2,
+    "Année début": 2025.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Voge",
+    "Modèle": "DS525X",
+    "Cylindrée (cc)": 525.0,
+    "Année début": 2022.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Voge",
+    "Modèle": "DS625X",
+    "Cylindrée (cc)": 625.0,
+    "Année début": 2024.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Voge",
+    "Modèle": "DS800 Rally",
+    "Cylindrée (cc)": 799.0,
+    "Année début": 2025.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Voge",
+    "Modèle": "DS900X",
+    "Cylindrée (cc)": 895.0,
+    "Année début": 2024.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Voge",
+    "Modèle": "DS900X A2",
+    "Cylindrée (cc)": 895.0,
+    "Année début": 2025.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Voge",
+    "Modèle": "R125",
+    "Cylindrée (cc)": 125.0,
+    "Année début": 2023.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Voge",
+    "Modèle": "R525",
+    "Cylindrée (cc)": 525.0,
+    "Année début": 2022.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Voge",
+    "Modèle": "R625",
+    "Cylindrée (cc)": 625.0,
+    "Année début": 2024.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Voge",
+    "Modèle": "SR1 ADV",
+    "Cylindrée (cc)": 125.0,
+    "Année début": 2024.0,
+    "Année fin": null,
+    "Type (M/S/E)": "S"
+  },
+  {
+    "Marque": "Voge",
+    "Modèle": "SR4",
+    "Cylindrée (cc)": 350.0,
+    "Année début": 2022.0,
+    "Année fin": null,
+    "Type (M/S/E)": "S"
+  },
+  {
+    "Marque": "Voge",
+    "Modèle": "SR4 Max",
+    "Cylindrée (cc)": 400.0,
+    "Année début": 2023.0,
+    "Année fin": null,
+    "Type (M/S/E)": "S"
+  },
+  {
+    "Marque": "Zontes",
+    "Modèle": "125 C2",
+    "Cylindrée (cc)": 125.0,
+    "Année début": 2022.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Zontes",
+    "Modèle": "125 GK",
+    "Cylindrée (cc)": 125.0,
+    "Année début": 2024.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Zontes",
+    "Modèle": "125 Hyper Trail",
+    "Cylindrée (cc)": 125.0,
+    "Année début": 2024.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Zontes",
+    "Modèle": "125 Roadster R",
+    "Cylindrée (cc)": 125.0,
+    "Année début": 2023.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Zontes",
+    "Modèle": "125 Scrambler X",
+    "Cylindrée (cc)": 125.0,
+    "Année début": 2023.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Zontes",
+    "Modèle": "125 Urban",
+    "Cylindrée (cc)": 125.0,
+    "Année début": 2023.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Zontes",
+    "Modèle": "350 GK",
+    "Cylindrée (cc)": 348.0,
+    "Année début": 2023.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Zontes",
+    "Modèle": "350 T",
+    "Cylindrée (cc)": 348.0,
+    "Année début": 2022.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Zontes",
+    "Modèle": "703 F Adventure",
+    "Cylindrée (cc)": 699.0,
+    "Année début": 2025.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Zontes",
+    "Modèle": "703 F Touring",
+    "Cylindrée (cc)": 699.0,
+    "Année début": 2025.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Zontes",
+    "Modèle": "703 RR",
+    "Cylindrée (cc)": 699.0,
+    "Année début": 2025.0,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Zontes",
+    "Modèle": "S125",
+    "Cylindrée (cc)": 125.0,
+    "Année début": 2024.0,
+    "Année fin": null,
+    "Type (M/S/E)": "S"
+  },
+  {
+    "Marque": "Zontes",
+    "Modèle": "S350",
+    "Cylindrée (cc)": 350.0,
+    "Année début": 2024.0,
+    "Année fin": null,
+    "Type (M/S/E)": "S"
+  },
+  {
+    "Marque": "QJ Motor",
+    "Modèle": "SRT 600",
+    "Cylindrée (cc)": 600,
+    "Année début": 2022,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "QJ Motor",
+    "Modèle": "SRV 550",
+    "Cylindrée (cc)": 550,
+    "Année début": 2022,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "QJ Motor",
+    "Modèle": "SRK 600",
+    "Cylindrée (cc)": 600,
+    "Année début": 2023,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "QJ Motor",
+    "Modèle": "SRK 400",
+    "Cylindrée (cc)": 400,
+    "Année début": 2023,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "QJ Motor",
+    "Modèle": "SRV 500",
+    "Cylindrée (cc)": 500,
+    "Année début": 2022,
+    "Année fin": null,
+    "Type (M/S/E)": "S"
+  },
+  {
+    "Marque": "QJ Motor",
+    "Modèle": "SRV 750",
+    "Cylindrée (cc)": 750,
+    "Année début": 2023,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "QJ Motor",
+    "Modèle": "SR 125",
+    "Cylindrée (cc)": 125,
+    "Année début": 2021,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "QJ Motor",
+    "Modèle": "SRT 800",
+    "Cylindrée (cc)": 800,
+    "Année début": 2023,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Zero Motorcycles",
+    "Modèle": "SR/F",
+    "Cylindrée (cc)": 0,
+    "Année début": 2019,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Zero Motorcycles",
+    "Modèle": "S",
+    "Cylindrée (cc)": 0,
+    "Année début": 2013,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Zero Motorcycles",
+    "Modèle": "DSR",
+    "Cylindrée (cc)": 0,
+    "Année début": 2014,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Zero Motorcycles",
+    "Modèle": "SR",
+    "Cylindrée (cc)": 0,
+    "Année début": 2013,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "CFMOTO",
+    "Modèle": "675 SR-R",
+    "Cylindrée (cc)": 675,
+    "Année début": 2024,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "CFMOTO",
+    "Modèle": "675SR-R",
+    "Cylindrée (cc)": 675,
+    "Année début": 2024,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "CFMOTO",
+    "Modèle": "450 SS",
+    "Cylindrée (cc)": 449,
+    "Année début": 2023,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "CFMOTO",
+    "Modèle": "450SS",
+    "Cylindrée (cc)": 449,
+    "Année début": 2023,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "CFMOTO",
+    "Modèle": "700CL-X Adventure",
+    "Cylindrée (cc)": 693,
+    "Année début": 2022,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "CF Moto",
+    "Modèle": "675 SR-R",
+    "Cylindrée (cc)": 675,
+    "Année début": 2024,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "CF Moto",
+    "Modèle": "650 NK",
+    "Cylindrée (cc)": 649,
+    "Année début": 2019,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "CF Moto",
+    "Modèle": "800 MT",
+    "Cylindrée (cc)": 799,
+    "Année début": 2022,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "CF Moto",
+    "Modèle": "450 SR",
+    "Cylindrée (cc)": 449,
+    "Année début": 2021,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "CF Moto",
+    "Modèle": "300 SR",
+    "Cylindrée (cc)": 292,
+    "Année début": 2020,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "CF Moto",
+    "Modèle": "700 CL-X",
+    "Cylindrée (cc)": 693,
+    "Année début": 2021,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "SWM",
+    "Modèle": "Gran Milano 440",
+    "Cylindrée (cc)": 440,
+    "Année début": 2022,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "SWM",
+    "Modèle": "Superdual T",
+    "Cylindrée (cc)": 600,
+    "Année début": 2019,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "SWM",
+    "Modèle": "RS 300 R",
+    "Cylindrée (cc)": 298,
+    "Année début": 2019,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "SWM",
+    "Modèle": "Six Days 650",
+    "Cylindrée (cc)": 600,
+    "Année début": 2019,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Sachs",
+    "Modèle": "ZEN 1",
+    "Cylindrée (cc)": 125,
+    "Année début": 2020,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Sachs",
+    "Modèle": "ZEN 2",
+    "Cylindrée (cc)": 125,
+    "Année début": 2020,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "AJP",
+    "Modèle": "PR3",
+    "Cylindrée (cc)": 200,
+    "Année début": 2018,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "AJP",
+    "Modèle": "PR4",
+    "Cylindrée (cc)": 250,
+    "Année début": 2018,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "AJP",
+    "Modèle": "PR7",
+    "Cylindrée (cc)": 350,
+    "Année début": 2020,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Moto Morini",
+    "Modèle": "X-Cape 650",
+    "Cylindrée (cc)": 649,
+    "Année début": 2021,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Moto Morini",
+    "Modèle": "Seiemmezzo STR",
+    "Cylindrée (cc)": 649,
+    "Année début": 2022,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Moto Morini",
+    "Modèle": "X-Cape 301",
+    "Cylindrée (cc)": 292,
+    "Année début": 2022,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Voge",
+    "Modèle": "625 DSX",
+    "Cylindrée (cc)": 625,
+    "Année début": 2024,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Voge",
+    "Modèle": "650 DS",
+    "Cylindrée (cc)": 649,
+    "Année début": 2022,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Voge",
+    "Modèle": "525 DS",
+    "Cylindrée (cc)": 525,
+    "Année début": 2021,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Voge",
+    "Modèle": "500 R",
+    "Cylindrée (cc)": 471,
+    "Année début": 2020,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Beta",
+    "Modèle": "RR 250",
+    "Cylindrée (cc)": 249,
+    "Année début": 2013,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Beta",
+    "Modèle": "RR 125",
+    "Cylindrée (cc)": 125,
+    "Année début": 2013,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Beta",
+    "Modèle": "RR 350",
+    "Cylindrée (cc)": 349,
+    "Année début": 2013,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Beta",
+    "Modèle": "RR 300",
+    "Cylindrée (cc)": 299,
+    "Année début": 2013,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Beta",
+    "Modèle": "RR 430",
+    "Cylindrée (cc)": 430,
+    "Année début": 2015,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Beta",
+    "Modèle": "RR 450",
+    "Cylindrée (cc)": 449,
+    "Année début": 2013,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Beta",
+    "Modèle": "RR-S 125",
+    "Cylindrée (cc)": 125,
+    "Année début": 2018,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Electric Motion",
+    "Modèle": "Epure",
+    "Cylindrée (cc)": 0,
+    "Année début": 2015,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Electric Motion",
+    "Modèle": "Escape R",
+    "Cylindrée (cc)": 0,
+    "Année début": 2019,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Electric Motion",
+    "Modèle": "Epure Race",
+    "Cylindrée (cc)": 0,
+    "Année début": 2020,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Surron",
+    "Modèle": "Light Bee X",
+    "Cylindrée (cc)": 0,
+    "Année début": 2019,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Surron",
+    "Modèle": "Ultra Bee",
+    "Cylindrée (cc)": 0,
+    "Année début": 2022,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Surron",
+    "Modèle": "Storm Bee",
+    "Cylindrée (cc)": 0,
+    "Année début": 2021,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Sherco",
+    "Modèle": "SE 300",
+    "Cylindrée (cc)": 299,
+    "Année début": 2015,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Sherco",
+    "Modèle": "SE 250",
+    "Cylindrée (cc)": 249,
+    "Année début": 2015,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Sherco",
+    "Modèle": "SE 450",
+    "Cylindrée (cc)": 449,
+    "Année début": 2015,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Sherco",
+    "Modèle": "SEF 300",
+    "Cylindrée (cc)": 299,
+    "Année début": 2015,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Moto-Guzzi",
+    "Modèle": "V7 850",
+    "Cylindrée (cc)": 853,
+    "Année début": 2021,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Moto-Guzzi",
+    "Modèle": "V7 Special 850",
+    "Cylindrée (cc)": 853,
+    "Année début": 2021,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Moto-Guzzi",
+    "Modèle": "V9 Bobber",
+    "Cylindrée (cc)": 853,
+    "Année début": 2016,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Moto-Guzzi",
+    "Modèle": "V85 TT",
+    "Cylindrée (cc)": 853,
+    "Année début": 2019,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "KTM",
+    "Modèle": "690 Enduro R",
+    "Cylindrée (cc)": 690,
+    "Année début": 2008,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "KTM",
+    "Modèle": "690 SMR",
+    "Cylindrée (cc)": 690,
+    "Année début": 2008,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "KTM",
+    "Modèle": "690 SMC R",
+    "Cylindrée (cc)": 690,
+    "Année début": 2012,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "KTM",
+    "Modèle": "250 EXC",
+    "Cylindrée (cc)": 249,
+    "Année début": 2000,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "KTM",
+    "Modèle": "300 EXC",
+    "Cylindrée (cc)": 299,
+    "Année début": 2000,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "KTM",
+    "Modèle": "350 EXC-F",
+    "Cylindrée (cc)": 349,
+    "Année début": 2012,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "KTM",
+    "Modèle": "450 EXC-F",
+    "Cylindrée (cc)": 449,
+    "Année début": 2012,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "KTM",
+    "Modèle": "125 SX",
+    "Cylindrée (cc)": 125,
+    "Année début": 2000,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "KTM",
+    "Modèle": "250 SX-F",
+    "Cylindrée (cc)": 249,
+    "Année début": 2005,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "KTM",
+    "Modèle": "350 SX-F",
+    "Cylindrée (cc)": 349,
+    "Année début": 2011,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "KTM",
+    "Modèle": "450 SX-F",
+    "Cylindrée (cc)": 449,
+    "Année début": 2007,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "KTM",
+    "Modèle": "300 SX",
+    "Cylindrée (cc)": 299,
+    "Année début": 2000,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Yamaha",
+    "Modèle": "YZ 125",
+    "Cylindrée (cc)": 125,
+    "Année début": 1997,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Yamaha",
+    "Modèle": "YZ 250",
+    "Cylindrée (cc)": 249,
+    "Année début": 1997,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Yamaha",
+    "Modèle": "WR 250 F",
+    "Cylindrée (cc)": 249,
+    "Année début": 2001,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Yamaha",
+    "Modèle": "WR 450 F",
+    "Cylindrée (cc)": 449,
+    "Année début": 2003,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Yamaha",
+    "Modèle": "YZF-R 250",
+    "Cylindrée (cc)": 249,
+    "Année début": 2014,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Yamaha",
+    "Modèle": "Niken GT",
+    "Cylindrée (cc)": 847,
+    "Année début": 2019,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Yamaha",
+    "Modèle": "Niken",
+    "Cylindrée (cc)": 847,
+    "Année début": 2018,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Honda",
+    "Modèle": "CRF 450 R",
+    "Cylindrée (cc)": 449,
+    "Année début": 2002,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Honda",
+    "Modèle": "CRF 250 R",
+    "Cylindrée (cc)": 249,
+    "Année début": 2004,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Honda",
+    "Modèle": "CRF 450 L",
+    "Cylindrée (cc)": 449,
+    "Année début": 2019,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "BMW",
+    "Modèle": "R 65",
+    "Cylindrée (cc)": 649,
+    "Année début": 1978,
+    "Année fin": 1993,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "BMW",
+    "Modèle": "R 1150 RT",
+    "Cylindrée (cc)": 1130,
+    "Année début": 2001,
+    "Année fin": 2005,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "BMW",
+    "Modèle": "G 650 Xmoto",
+    "Cylindrée (cc)": 652,
+    "Année début": 2007,
+    "Année fin": 2010,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "BMW",
+    "Modèle": "F800GS",
+    "Cylindrée (cc)": 798,
+    "Année début": 2008,
+    "Année fin": 2018,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Triumph",
+    "Modèle": "Thruxton 900",
+    "Cylindrée (cc)": 865,
+    "Année début": 2004,
+    "Année fin": 2015,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Triumph",
+    "Modèle": "Bonneville T100",
+    "Cylindrée (cc)": 865,
+    "Année début": 2002,
+    "Année fin": 2016,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Fantic",
+    "Modèle": "XEF 125",
+    "Cylindrée (cc)": 125,
+    "Année début": 2021,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Fantic",
+    "Modèle": "XE 125",
+    "Cylindrée (cc)": 125,
+    "Année début": 2021,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Fantic",
+    "Modèle": "XXF 125",
+    "Cylindrée (cc)": 125,
+    "Année début": 2022,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "GasGas",
+    "Modèle": "MC 250 F",
+    "Cylindrée (cc)": 249,
+    "Année début": 2021,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "GasGas",
+    "Modèle": "MC 125",
+    "Cylindrée (cc)": 125,
+    "Année début": 2021,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "GasGas",
+    "Modèle": "EX 300",
+    "Cylindrée (cc)": 299,
+    "Année début": 2021,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "GAS GAS",
+    "Modèle": "MCF 250",
+    "Cylindrée (cc)": 249,
+    "Année début": 2021,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "GAS GAS",
+    "Modèle": "MCF 350",
+    "Cylindrée (cc)": 349,
+    "Année début": 2021,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "GAS GAS",
+    "Modèle": "MCF 450",
+    "Cylindrée (cc)": 449,
+    "Année début": 2021,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Honda",
+    "Modèle": "CBF 1000",
+    "Cylindrée (cc)": 1000,
+    "Année début": 2006,
+    "Année fin": 2010,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Honda",
+    "Modèle": "CBF 1000 F",
+    "Cylindrée (cc)": 1000,
+    "Année début": 2010,
+    "Année fin": 2016,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Honda",
+    "Modèle": "CBR 1000 RR",
+    "Cylindrée (cc)": 999,
+    "Année début": 2004,
+    "Année fin": 2019,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Honda",
+    "Modèle": "CBR 1000 RR-R Fireblade",
+    "Cylindrée (cc)": 999,
+    "Année début": 2020,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Honda",
+    "Modèle": "Gold Wing",
+    "Cylindrée (cc)": 1520,
+    "Année début": 1980,
+    "Année fin": 2000,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Honda",
+    "Modèle": "Gold Wing",
+    "Cylindrée (cc)": 1832,
+    "Année début": 2001,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "HARLEY-DAVIDSON",
+    "Modèle": "Street 750/XG750",
+    "Cylindrée (cc)": 749,
+    "Année début": 2015,
+    "Année fin": 2020,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Sherco",
+    "Modèle": "SE 125",
+    "Cylindrée (cc)": 125,
+    "Année début": 2010,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Yamaha",
+    "Modèle": "TW200",
+    "Cylindrée (cc)": 196,
+    "Année début": 1987,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Kawasaki",
+    "Modèle": "Z650",
+    "Cylindrée (cc)": 649,
+    "Année début": 2017,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "BMW",
+    "Modèle": "R 1200 RT/RT 1200",
+    "Cylindrée (cc)": 1170,
+    "Année début": 2005,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Beta",
+    "Modèle": "Beta 350",
+    "Cylindrée (cc)": 349,
+    "Année début": 2013,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Voge",
+    "Modèle": "650DS",
+    "Cylindrée (cc)": 649,
+    "Année début": 2022,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "BMW",
+    "Modèle": "800GS",
+    "Cylindrée (cc)": 798,
+    "Année début": 2008,
+    "Année fin": 2018,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "BMW",
+    "Modèle": "R65",
+    "Cylindrée (cc)": 649,
+    "Année début": 1978,
+    "Année fin": 1993,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Fantic",
+    "Modèle": "XX 125",
+    "Cylindrée (cc)": 125,
+    "Année début": 2022,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Aprilia",
+    "Modèle": "RS 457",
+    "Cylindrée (cc)": 457,
+    "Année début": 2023,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Honda",
+    "Modèle": "F6C Valkyrie",
+    "Cylindrée (cc)": 1520,
+    "Année début": 1997,
+    "Année fin": 2003,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Yamaha",
+    "Modèle": "FJR 1300",
+    "Cylindrée (cc)": 1298,
+    "Année début": 2001,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Yamaha",
+    "Modèle": "XJR 1300",
+    "Cylindrée (cc)": 1251,
+    "Année début": 1998,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Yamaha",
+    "Modèle": "FZ1-N",
+    "Cylindrée (cc)": 998,
+    "Année début": 2006,
+    "Année fin": 2015,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Yamaha",
+    "Modèle": "YZF 450 F",
+    "Cylindrée (cc)": 449,
+    "Année début": 2003,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Suzuki",
+    "Modèle": "GSX 1400",
+    "Cylindrée (cc)": 1402,
+    "Année début": 2001,
+    "Année fin": 2008,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Suzuki",
+    "Modèle": "RM 250",
+    "Cylindrée (cc)": 249,
+    "Année début": 1996,
+    "Année fin": 2008,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Triumph",
+    "Modèle": "Street Twin 900/Street Twin",
+    "Cylindrée (cc)": 900,
+    "Année début": 2016,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Triumph",
+    "Modèle": "Bonneville",
+    "Cylindrée (cc)": 865,
+    "Année début": 2001,
+    "Année fin": 2015,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "BMW",
+    "Modèle": "K1200LT",
+    "Cylindrée (cc)": 1170,
+    "Année début": 1999,
+    "Année fin": 2009,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "BMW",
+    "Modèle": "K1300S",
+    "Cylindrée (cc)": 1293,
+    "Année début": 2009,
+    "Année fin": 2016,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "BMW",
+    "Modèle": "F900R",
+    "Cylindrée (cc)": 895,
+    "Année début": 2020,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "BMW",
+    "Modèle": "1200GS",
+    "Cylindrée (cc)": 1170,
+    "Année début": 2004,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "BMW",
+    "Modèle": "1200GS Adventure",
+    "Cylindrée (cc)": 1170,
+    "Année début": 2006,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Honda",
+    "Modèle": "NC750X",
+    "Cylindrée (cc)": 745,
+    "Année début": 2014,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Honda",
+    "Modèle": "VTX 1300",
+    "Cylindrée (cc)": 1312,
+    "Année début": 2002,
+    "Année fin": 2009,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Honda",
+    "Modèle": "XR 600",
+    "Cylindrée (cc)": 591,
+    "Année début": 1988,
+    "Année fin": 2000,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Honda",
+    "Modèle": "VFR 800",
+    "Cylindrée (cc)": 782,
+    "Année début": 1998,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Kawasaki",
+    "Modèle": "ZX6R/ZXR 636",
+    "Cylindrée (cc)": 636,
+    "Année début": 1995,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Kawasaki",
+    "Modèle": "KXF 250",
+    "Cylindrée (cc)": 249,
+    "Année début": 2004,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Kawasaki",
+    "Modèle": "GPZ 750 Turbo",
+    "Cylindrée (cc)": 750,
+    "Année début": 1984,
+    "Année fin": 1989,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "KTM",
+    "Modèle": "KTM 690 Enduro R",
+    "Cylindrée (cc)": 690,
+    "Année début": 2008,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "KTM",
+    "Modèle": "KTM 690 SMC R",
+    "Cylindrée (cc)": 693,
+    "Année début": 2012,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "KTM",
+    "Modèle": "XC-W 125",
+    "Cylindrée (cc)": 125,
+    "Année début": 2017,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "HARLEY-DAVIDSON",
+    "Modèle": "Nightster",
+    "Cylindrée (cc)": 1200,
+    "Année début": 2007,
+    "Année fin": 2012,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Moto-Guzzi",
+    "Modèle": "V7 III",
+    "Cylindrée (cc)": 744,
+    "Année début": 2016,
+    "Année fin": 2020,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Mash",
+    "Modèle": "FR750/FR 750",
+    "Cylindrée (cc)": 750,
+    "Année début": 2023,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Sherco",
+    "Modèle": "Sherco 125",
+    "Cylindrée (cc)": 125,
+    "Année début": 2010,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "GAS GAS",
+    "Modèle": "ES 700",
+    "Cylindrée (cc)": 692,
+    "Année début": 2021,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "GAS GAS",
+    "Modèle": "SM 700",
+    "Cylindrée (cc)": 692,
+    "Année début": 2021,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "GAS GAS",
+    "Modèle": "EC 500 F",
+    "Cylindrée (cc)": 499,
+    "Année début": 2021,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Husqvarna",
+    "Modèle": "701 Enduro",
+    "Cylindrée (cc)": 692,
+    "Année début": 2016,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Husqvarna",
+    "Modèle": "701 Supermoto",
+    "Cylindrée (cc)": 692,
+    "Année début": 2016,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "KTM",
+    "Modèle": "390 SMC R",
+    "Cylindrée (cc)": 373,
+    "Année début": 2024,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Sachs",
+    "Modèle": "Madass 125",
+    "Cylindrée (cc)": 125,
+    "Année début": 2004,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Ducati",
+    "Modèle": "Hypermotard 698",
+    "Cylindrée (cc)": 659,
+    "Année début": 2024,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Yamaha",
+    "Modèle": "XSR 1100",
+    "Cylindrée (cc)": 1100,
+    "Année début": 2022,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Husqvarna",
+    "Modèle": "Husqvarna 701",
+    "Cylindrée (cc)": 692,
+    "Année début": 2016,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Husqvarna",
+    "Modèle": "Husqvarna 300 TE",
+    "Cylindrée (cc)": 299,
+    "Année début": 2017,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Husqvarna",
+    "Modèle": "Husqvarna 501 FE",
+    "Cylindrée (cc)": 499,
+    "Année début": 2014,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "GAS GAS",
+    "Modèle": "GasGas 700",
+    "Cylindrée (cc)": 692,
+    "Année début": 2021,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "KTM",
+    "Modèle": "KTM 699 Enduro R",
+    "Cylindrée (cc)": 699,
+    "Année début": 2022,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "KTM",
+    "Modèle": "KTM 890 SMT",
+    "Cylindrée (cc)": 889,
+    "Année début": 2023,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Kawasaki",
+    "Modèle": "ER6 F/ER-6F",
+    "Cylindrée (cc)": 649,
+    "Année début": 2006,
+    "Année fin": 2016,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Kawasaki",
+    "Modèle": "ER6 N/ER-6N",
+    "Cylindrée (cc)": 649,
+    "Année début": 2006,
+    "Année fin": 2016,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Suzuki",
+    "Modèle": "DR 650",
+    "Cylindrée (cc)": 644,
+    "Année début": 1990,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Moto-Guzzi",
+    "Modèle": "V65 SP",
+    "Cylindrée (cc)": 643,
+    "Année début": 1982,
+    "Année fin": 1989,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Husqvarna",
+    "Modèle": "Husqvarna 300 TE/Husqvarna 300 TEi",
+    "Cylindrée (cc)": 299,
+    "Année début": 2017,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "KTM",
+    "Modèle": "KTM 125 SMC R",
+    "Cylindrée (cc)": 125,
+    "Année début": 2024,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "KTM",
+    "Modèle": "KTM 125 EXC",
+    "Cylindrée (cc)": 125,
+    "Année début": 2017,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "BMW",
+    "Modèle": "S1000R",
+    "Cylindrée (cc)": 999,
+    "Année début": 2014,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "ROYAL ENFIELD",
+    "Modèle": "Classic 650",
+    "Cylindrée (cc)": 648,
+    "Année début": 2023,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "ROYAL ENFIELD",
+    "Modèle": "Guerrilla 450",
+    "Cylindrée (cc)": 452,
+    "Année début": 2024,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Aprilia",
+    "Modèle": "Tuono 125",
+    "Cylindrée (cc)": 125,
+    "Année début": 2017,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "SWM",
+    "Modèle": "SM 500 R",
+    "Cylindrée (cc)": 499,
+    "Année début": 2019,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Suzuki",
+    "Modèle": "TL1000S",
+    "Cylindrée (cc)": 996,
+    "Année début": 1997,
+    "Année fin": 2001,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Husqvarna",
+    "Modèle": "Husqvarna SMR 630",
+    "Cylindrée (cc)": 630,
+    "Année début": 2011,
+    "Année fin": 2014,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Suzuki",
+    "Modèle": "DRZ 400",
+    "Cylindrée (cc)": 398,
+    "Année début": 2000,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "Honda",
+    "Modèle": "CBR 250 RR",
+    "Cylindrée (cc)": 249,
+    "Année début": 1986,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "KTM",
+    "Modèle": "KTM 125 Enduro R",
+    "Cylindrée (cc)": 125,
+    "Année début": 2021,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "KTM",
+    "Modèle": "KTM 390 Enduro R",
+    "Cylindrée (cc)": 373,
+    "Année début": 2024,
+    "Année fin": null,
+    "Type (M/S/E)": "E"
+  },
+  {
+    "Marque": "ROYAL ENFIELD",
+    "Modèle": "Guerilla 450",
+    "Cylindrée (cc)": 452,
+    "Année début": 2024,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Husqvarna",
+    "Modèle": "Svartpilen 801",
+    "Cylindrée (cc)": 799,
+    "Année début": 2023,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "Yamaha",
+    "Modèle": "XSR 1100/Scrambler 1100",
+    "Cylindrée (cc)": 1100,
+    "Année début": 2022,
+    "Année fin": null,
+    "Type (M/S/E)": "M"
+  },
+  {
+    "Marque": "HUSABERG",
+    "Modèle": "HUSABERG 550",
+    "Cylindrée (cc)": 550,
+    "Année début": 2004,
+    "Année fin": 2011,
+    "Type (M/S/E)": "E"
+  }
+]

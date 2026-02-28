@@ -1,0 +1,223 @@
+{
+  "name": "Enrichissement Annonces Leboncoin - IMPROVED v2.0",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "includeDrafts": false,
+          "q": "has:attachment"
+        },
+        "options": {
+          "downloadAttachments": true
+        }
+      },
+      "id": "gmail-trigger-001",
+      "name": "Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1,
+      "position": [250, 480],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "1",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================\n// n8n - Extraction JSON Leboncoin\n// ============================================\n\nconst item = $input.first();\nconst bin = item.binary?.attachment_0;\n\nif (!bin) {\n  throw new Error(\"Pièce jointe 'attachment_0' introuvable\");\n}\n\n// Lecture du buffer\nconst buffer = await this.helpers.getBinaryDataBuffer(0, \"attachment_0\");\n\n// Diagnostics (à désactiver en production)\nconst ENABLE_DIAGNOSTICS = false;\nif (ENABLE_DIAGNOSTICS) {\n  const head = buffer.subarray(0, 32);\n  console.log(\"Binary info:\", {\n    fileName: bin.fileName,\n    mimeType: bin.mimeType,\n    size: bin.fileSize,\n    hex: Buffer.from(head).toString('hex')\n  });\n}\n\n// Détection compression\nif (buffer[0] === 0x1f && buffer[1] === 0x8b) {\n  throw new Error(\"Fichier GZIP détecté - décompression requise\");\n}\nif (buffer[0] === 0x50 && buffer[1] === 0x4b) {\n  throw new Error(\"Fichier ZIP détecté - extraction requise\");\n}\n\n// Fonction de nettoyage unifiée\nconst cleanJson = (text) => {\n  return text\n    .replace(/^\\uFEFF/, '') // BOM UTF-8\n    .trim()\n    .replace(/^[^[{]*/, '') // Supprimer avant [ ou {\n    .replace(/[^\\]}]*$/, ''); // Supprimer après ] ou }\n};\n\n// Tentatives de parsing (ordre d'encodages par fréquence)\nconst encodings = ['utf8', 'utf16le', 'latin1'];\nlet data = null;\n\nfor (const encoding of encodings) {\n  try {\n    const text = cleanJson(buffer.toString(encoding));\n    if (text.startsWith('[') || text.startsWith('{')) {\n      data = JSON.parse(text);\n      break;\n    }\n  } catch (e) {\n    continue; // Essayer l'encodage suivant\n  }\n}\n\nif (!data) {\n  throw new Error(\n    `Parsing JSON impossible. Formats testés: ${encodings.join(', ')}\\n` +\n    `Aperçu: ${buffer.toString('utf8').slice(0, 100)}`\n  );\n}\n\n// Normalisation et nettoyage\nconst items = Array.isArray(data) ? data : [data];\nconst cleaned = items.filter(item => {\n  if (!item || typeof item !== 'object') return false;\n  return Object.values(item).some(v => \n    v !== null && v !== undefined && v !== '' && String(v).trim() !== ''\n  );\n});\n\nreturn cleaned.map(json => ({ json }));"
+      },
+      "id": "extraction-json-002",
+      "name": "Extraction JSON Leboncoin",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "operation": "removeDuplicateInputItems",
+        "compare": "selectedFields",
+        "fieldsToCompare": "absolute href",
+        "options": {
+          "removeOtherFields": false
+        }
+      },
+      "id": "remove-duplicates-003",
+      "name": "Remove Duplicates",
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filtrer les lignes vides\nconst items = $input.all();\n\nif (!items || items.length === 0) {\n  return [];\n}\n\nconst filteredItems = items.filter(item => {\n  const json = item.json;\n  \n  // Vérifier que absolute href existe et n'est pas vide\n  const hasHref = json['absolute href'] && \n    typeof json['absolute href'] === 'string' && \n    json['absolute href'].trim() !== '';\n  \n  // Vérifier qu'au moins un autre champ significatif existe\n  const hasOtherField = json['text-headline-1-expanded'] || \n    json['text-body-1 (2)'] || \n    json['text-body-1 (8)'];\n  \n  return hasHref && hasOtherField;\n});\n\nreturn filteredItems.map(item => ({\n  json: item.json\n}));"
+      },
+      "id": "filter-empty-004",
+      "name": "Filter Empty Rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://nante.nathansouffrin7.workers.dev/",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "get-modeles-005",
+      "name": "GET Modeles",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [450, 600]
+    },
+    {
+      "parameters": {},
+      "id": "wait-006",
+      "name": "Wait 5s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1050, 300],
+      "webhookId": "auto-generated-webhook-id"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "id": "merge-007",
+      "name": "Merge Data",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [1250, 400]
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "create",
+        "tableId": "annonces_motos_enrichies",
+        "options": {
+          "upsert": true,
+          "onConflict": "Url_Https"
+        }
+      },
+      "id": "insert-supabase-008",
+      "name": "Insert to Supabase",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [2200, 400],
+      "credentials": {
+        "supabaseApi": {
+          "id": "2",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extraction JSON Leboncoin",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GET Modeles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraction JSON Leboncoin": {
+      "main": [
+        [
+          {
+            "node": "Remove Duplicates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove Duplicates": {
+      "main": [
+        [
+          {
+            "node": "Filter Empty Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Empty Rows": {
+      "main": [
+        [
+          {
+            "node": "Wait 5s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Modeles": {
+      "main": [
+        [
+          {
+            "node": "Merge Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wait 5s": {
+      "main": [
+        [
+          {
+            "node": "Merge Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Data": {
+      "main": [
+        [
+          {
+            "node": "Insert to Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2026-02-15T10:30:00.000Z",
+  "versionId": "2.0.0"
+}

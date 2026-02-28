@@ -1,0 +1,201 @@
+{
+  "test_cases": [
+    {
+      "name": "Annonce EXCELLENTE - Toutes données présentes",
+      "input": {
+        "text-body-1 (2)": "YAMAHA",
+        "text-body-1 href (2)": "https://www.leboncoin.fr/recherche?u_moto_brand:YAMAHA",
+        "text-body-1 href (3)": "https://www.leboncoin.fr/recherche?u_moto_model:MT-07",
+        "text-body-1 (8)": "YAMAHA MT-07 ABS 2021",
+        "text-body-1 href (5)": "https://www.leboncoin.fr/recherche?cubic_capacity:689",
+        "text-body-1 (4)": "2021",
+        "text-body-1 (7)": "689",
+        "annonce_description": "Superbe YAMAHA MT-07 de 2021 en excellent état. Moto très bien entretenue, révisions à jour chez le concessionnaire. Équipée d'ABS, permis A2. Pneus récents, freins neufs. Jamais accidentée. Visible à Paris. Prix négociable. Possibilité de livraison.",
+        "size-full src": "https://img.leboncoin.fr/photo1.jpg",
+        "size-full src (2)": "https://img.leboncoin.fr/photo2.jpg",
+        "size-full src (3)": "https://img.leboncoin.fr/photo3.jpg",
+        "text-headline-1-expanded": "YAMAHA MT-07 ABS 2021",
+        "absolute href": "https://www.leboncoin.fr/motos/12345.htm"
+      },
+      "expected_output": {
+        "data_quality_score": "95-100",
+        "data_quality_tier": "EXCELLENT",
+        "recommended_match_node": "1st Match",
+        "needs_manual_review": false,
+        "completeness_percentage": "100%",
+        "fields_present": 7,
+        "_completude_details": {
+          "brand": { "quality": "EXCELLENT", "points": 25 },
+          "model": { "quality": "EXCELLENT", "points": 20 },
+          "cc": { "quality": "EXCELLENT", "points": 15 },
+          "year": { "quality": "GOOD", "points": 10 },
+          "description": { "quality": "EXCELLENT", "points": 15 },
+          "photos": { "quality": "EXCELLENT", "points": 5 },
+          "title": { "quality": "EXCELLENT", "points": 10 }
+        }
+      }
+    },
+    {
+      "name": "Annonce GOOD - Données complètes mais sans href modèle",
+      "input": {
+        "text-body-1 (2)": "TRIUMPH",
+        "text-body-1 href (2)": "https://www.leboncoin.fr/recherche?u_moto_brand:TRIUMPH",
+        "text-body-1 href (3)": "https://www.leboncoin.fr/recherche?u_moto_model:autre",
+        "text-body-1 (8)": "1050_Speed Triple 1050 ABS",
+        "text-body-1 (7)": "1050",
+        "text-body-1 (4)": "2013",
+        "annonce_description": "Triumph Speed Triple 1050, excellente moto roadster, freinage ABS, très agréable à conduire. Bon état général.",
+        "size-full src": "https://img.leboncoin.fr/photo1.jpg",
+        "size-full src (2)": "https://img.leboncoin.fr/photo2.jpg",
+        "absolute href": "https://www.leboncoin.fr/motos/67890.htm"
+      },
+      "expected_output": {
+        "data_quality_score": "70-80",
+        "data_quality_tier": "GOOD",
+        "recommended_match_node": "2nd Match",
+        "needs_manual_review": false,
+        "completeness_percentage": "100%",
+        "fields_present": 7,
+        "_completude_details": {
+          "brand": { "quality": "EXCELLENT", "points": 25 },
+          "model": { "quality": "VERY_GOOD", "points": 18 },
+          "cc": { "quality": "GOOD", "points": 12 },
+          "year": { "quality": "GOOD", "points": 10 },
+          "description": { "quality": "GOOD", "points": 12 },
+          "photos": { "quality": "GOOD", "points": 4 },
+          "title": { "quality": "GOOD", "points": 7 }
+        }
+      }
+    },
+    {
+      "name": "Annonce MEDIUM - Données moyennes, pas de CC href",
+      "input": {
+        "text-body-1 (2)": "KAWASAKI",
+        "text-body-1 (8)": "Z900",
+        "text-body-1 (4)": "2018",
+        "text-body-1 (7)": "948",
+        "annonce_description": "Belle Z900 de 2018. Entretenue régulièrement. Quelques rayures sur le réservoir.",
+        "size-full src": "https://img.leboncoin.fr/photo1.jpg",
+        "absolute href": "https://www.leboncoin.fr/motos/11111.htm"
+      },
+      "expected_output": {
+        "data_quality_score": "50-60",
+        "data_quality_tier": "MEDIUM",
+        "recommended_match_node": "3rd Match",
+        "needs_manual_review": false,
+        "completeness_percentage": "71%",
+        "fields_present": 5,
+        "_completude_details": {
+          "brand": { "quality": "GOOD", "points": 20 },
+          "model": { "quality": "MEDIUM", "points": 8 },
+          "cc": { "quality": "GOOD", "points": 12 },
+          "year": { "quality": "GOOD", "points": 10 },
+          "description": { "quality": "MEDIUM", "points": 8 },
+          "photos": { "quality": "MEDIUM", "points": 2 },
+          "title": { "quality": "POOR", "points": 3 }
+        }
+      }
+    },
+    {
+      "name": "Annonce POOR - Données pauvres, marque détectée, peu d'infos",
+      "input": {
+        "text-body-1 (2)": "HONDA",
+        "text-body-1 (8)": "Moto Honda",
+        "annonce_description": "Honda en bon état, visible Paris",
+        "size-full src": "https://img.leboncoin.fr/photo1.jpg",
+        "absolute href": "https://www.leboncoin.fr/motos/22222.htm"
+      },
+      "expected_output": {
+        "data_quality_score": "25-35",
+        "data_quality_tier": "POOR",
+        "recommended_match_node": "4th Match",
+        "needs_manual_review": false,
+        "completeness_percentage": "43%",
+        "fields_present": 3,
+        "_completude_details": {
+          "brand": { "quality": "GOOD", "points": 20 },
+          "model": { "quality": "NONE", "points": 0 },
+          "cc": { "quality": "NONE", "points": 0 },
+          "year": { "quality": "NONE", "points": 0 },
+          "description": { "quality": "POOR", "points": 4 },
+          "photos": { "quality": "MEDIUM", "points": 2 },
+          "title": { "quality": "POOR", "points": 3 }
+        }
+      }
+    },
+    {
+      "name": "Annonce MINIMAL - Données minimales, presque rien",
+      "input": {
+        "text-body-1 (8)": "Moto",
+        "annonce_description": "A vendre",
+        "absolute href": "https://www.leboncoin.fr/motos/33333.htm"
+      },
+      "expected_output": {
+        "data_quality_score": "5-15",
+        "data_quality_tier": "MINIMAL",
+        "recommended_match_node": "5th Match",
+        "needs_manual_review": true,
+        "completeness_percentage": "14%",
+        "fields_present": 1,
+        "_completude_details": {
+          "brand": { "quality": "NONE", "points": 0 },
+          "model": { "quality": "NONE", "points": 0 },
+          "cc": { "quality": "NONE", "points": 0 },
+          "year": { "quality": "NONE", "points": 0 },
+          "description": { "quality": "NONE", "points": 0 },
+          "photos": { "quality": "NONE", "points": 0 },
+          "title": { "quality": "POOR", "points": 3 }
+        }
+      }
+    },
+    {
+      "name": "Annonce GOOD avec version constructeur riche (pas de href modèle)",
+      "input": {
+        "text-body-1 (2)": "BMW",
+        "text-body-1 href (2)": "https://www.leboncoin.fr/recherche?u_moto_brand:BMW",
+        "text-body-1 (8)": "R1250GS Adventure Triple Black Edition",
+        "text-body-1 href (5)": "https://www.leboncoin.fr/recherche?cubic_capacity:1254",
+        "text-body-1 (4)": "2020",
+        "annonce_description": "Magnifique BMW R1250GS Adventure en version Triple Black. Moto comme neuve avec seulement 8000km. Full options : GPS, valises, régulateur de vitesse, suspensions électroniques. Garantie 2 ans restante.",
+        "size-full src": "https://img.leboncoin.fr/photo1.jpg",
+        "size-full src (2)": "https://img.leboncoin.fr/photo2.jpg",
+        "size-full src (3)": "https://img.leboncoin.fr/photo3.jpg",
+        "absolute href": "https://www.leboncoin.fr/motos/44444.htm"
+      },
+      "expected_output": {
+        "data_quality_score": "85-95",
+        "data_quality_tier": "EXCELLENT",
+        "recommended_match_node": "1st Match",
+        "needs_manual_review": false,
+        "completeness_percentage": "100%",
+        "fields_present": 7,
+        "_completude_details": {
+          "brand": { "quality": "EXCELLENT", "points": 25 },
+          "model": { "quality": "VERY_GOOD", "points": 18 },
+          "cc": { "quality": "EXCELLENT", "points": 15 },
+          "year": { "quality": "GOOD", "points": 10 },
+          "description": { "quality": "EXCELLENT", "points": 15 },
+          "photos": { "quality": "EXCELLENT", "points": 5 },
+          "title": { "quality": "EXCELLENT", "points": 10 }
+        }
+      }
+    }
+  ],
+  "instructions": {
+    "comment_tester": [
+      "1. Créez un nœud Code 'Test Input' avec ce contenu:",
+      "   return test_cases.map(tc => ({ json: tc.input }))",
+      "2. Connectez-le au nœud 'Scoring de Complétude'",
+      "3. Exécutez le workflow",
+      "4. Vérifiez que les scores correspondent aux attentes"
+    ],
+    "validation": [
+      "✅ Annonce EXCELLENTE → score 95-100 → tier EXCELLENT → 1st Match",
+      "✅ Annonce GOOD → score 70-80 → tier GOOD → 2nd Match",
+      "✅ Annonce MEDIUM → score 50-60 → tier MEDIUM → 3rd Match",
+      "✅ Annonce POOR → score 25-35 → tier POOR → 4th Match",
+      "✅ Annonce MINIMAL → score 5-15 → tier MINIMAL → 5th Match",
+      "✅ Console affiche la distribution correcte"
+    ]
+  }
+}

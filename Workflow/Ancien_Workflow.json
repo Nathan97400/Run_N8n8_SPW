@@ -1,0 +1,1652 @@
+{
+  "name": "v2 scrap lbc",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "includeDrafts": false
+        },
+        "options": {
+          "downloadAttachments": true
+        }
+      },
+      "id": "e7299bc3-aa5e-4931-89cb-37cb5559662d",
+      "name": "Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "position": [
+        -976,
+        480
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "hdQlj848jfuem258",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================\n// n8n - Extraction JSON \n// ============================================\n\nconst item = $input.first();\nconst bin = item.binary?.attachment_0;\n\nif (!bin) {\n  throw new Error(\"Pièce jointe 'attachment_0' introuvable\");\n}\n\n// Lecture du buffer\nconst buffer = await this.helpers.getBinaryDataBuffer(0, \"attachment_0\");\n\n// Diagnostics (à désactiver en production)\nconst ENABLE_DIAGNOSTICS = false;\nif (ENABLE_DIAGNOSTICS) {\n  const head = buffer.subarray(0, 32);\n  console.log(\"Binary info:\", {\n    fileName: bin.fileName,\n    mimeType: bin.mimeType,\n    size: bin.fileSize,\n    hex: Buffer.from(head).toString('hex')\n  });\n}\n\n// Détection compression\nif (buffer[0] === 0x1f && buffer[1] === 0x8b) {\n  throw new Error(\"Fichier GZIP détecté - décompression requise\");\n}\nif (buffer[0] === 0x50 && buffer[1] === 0x4b) {\n  throw new Error(\"Fichier ZIP détecté - extraction requise\");\n}\n\n// Fonction de nettoyage unifiée\nconst cleanJson = (text) => {\n  return text\n    .replace(/^\\uFEFF/, '') // BOM UTF-8\n    .trim()\n    .replace(/^[^[{]*/, '') // Supprimer avant [ ou {\n    .replace(/[^\\]}]*$/, ''); // Supprimer après ] ou }\n};\n\n// Tentatives de parsing (ordre d'encodages par fréquence)\nconst encodings = ['utf8', 'utf16le', 'latin1'];\nlet data = null;\n\nfor (const encoding of encodings) {\n  try {\n    const text = cleanJson(buffer.toString(encoding));\n    if (text.startsWith('[') || text.startsWith('{')) {\n      data = JSON.parse(text);\n      break;\n    }\n  } catch (e) {\n    continue; // Essayer l'encodage suivant\n  }\n}\n\nif (!data) {\n  throw new Error(\n    `Parsing JSON impossible. Formats testés: ${encodings.join(', ')}\\n` +\n    `Aperçu: ${buffer.toString('utf8').slice(0, 100)}`\n  );\n}\n\n// Normalisation et nettoyage\nconst items = Array.isArray(data) ? data : [data];\nconst cleaned = items.filter(item => {\n  if (!item || typeof item !== 'object') return false;\n  return Object.values(item).some(v => \n    v !== null && v !== undefined && v !== '' && String(v).trim() !== ''\n  );\n});\n\nreturn cleaned.map(json => ({ json }));"
+      },
+      "id": "d8729aca-510c-4085-bad1-b4c3f62a2cbd",
+      "name": "Extraction JSON Leboncoin",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -784,
+        224
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "url": "https://nante.nathansouffrin7.workers.dev/",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "e148eab2-67a9-4e25-85b1-a21a3a63ca09",
+      "name": "GET Modeles",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -816,
+        672
+      ],
+      "typeVersion": 4
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -224,
+        240
+      ],
+      "id": "4d1595da-51bf-4dd4-bf11-dcf64ad38ecd",
+      "name": "Wait 5s",
+      "webhookId": "9f699d7c-6697-44ae-8b36-5383022d5a0b"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -448,
+        240
+      ],
+      "id": "2c7f06ee-bcb2-4a78-870e-66cc8891f400",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================\n// SPLIT EN BATCHES DE 20 ANNONCES\n// ============================================\n\nconst allAnnonces = $input.all().map(item => item.json);\nconst BATCH_SIZE = 20;\nconst batches = [];\n\nfor (let i = 0; i < allAnnonces.length; i += BATCH_SIZE) {\n  batches.push({\n    json: {\n      batchIndex: Math.floor(i / BATCH_SIZE),\n      totalBatches: Math.ceil(allAnnonces.length / BATCH_SIZE),\n      totalAnnonces: allAnnonces.length,\n      annonces: allAnnonces.slice(i, i + BATCH_SIZE)\n    }\n  });\n}\n\nconsole.log(`📦 Créé ${batches.length} batches de ${BATCH_SIZE} annonces`);\nreturn batches;\n"
+      },
+      "id": "a913a28c-7c7c-49fd-8924-14b41e550725",
+      "name": "Split en Batches 20",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1120,
+        2480
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "50fa772e-ffc7-44c9-800f-113b3fdd5a43",
+              "leftValue": "={{ $json.matched_marque }}",
+              "rightValue": "={{\"\"}}",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        256,
+        240
+      ],
+      "id": "a87e984f-f88a-448a-b3b9-a7db97c61441",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "50fa772e-ffc7-44c9-800f-113b3fdd5a43",
+              "leftValue": "={{ $json.matched_marque }}",
+              "rightValue": "={{\"\"}}",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        256,
+        448
+      ],
+      "id": "376f06d7-f2b1-493a-a1d4-d8cd7d48d01c",
+      "name": "If1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -448,
+        448
+      ],
+      "id": "248dace1-c362-40ec-89bc-3f10e24f3513",
+      "name": "Merge n°2"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -448,
+        640
+      ],
+      "id": "abce0eb3-5c07-455f-ac3a-09804ebb6596",
+      "name": "Merge n°3"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ===============================\n// HELPERS\n// ===============================\nconst CURRENT_YEAR = 2026;\n\nfunction extractFavoris(value) {\n  if (!value) return 0;\n  const m = String(value).match(/(\\d+)\\s*$/); // prend le dernier nombre\n  return m ? parseInt(m[1], 10) : 0;\n}\nfunction extractCC(value) {\n  if (!value) return \"\";\n\n  const m = String(value).match(/(\\d{2,4}(\\.\\d+)?)/);\n  if (!m) return \"\";\n\n  const cc = parseFloat(m[1]);\n\n  // ❌ si inférieur à 49.8 → ne rien afficher\n  if (cc < 49.8) return \"\";\n\n  return cc;\n}\n\n\nfunction extractNbPhotos(value) {\n  if (!value) return 0;\n\n  const s = String(value);\n\n  // ex: \"Voir les 5 photos\" / \"Voir les photos\" / \"Voir 12 photos\"\n  const m = s.match(/(\\d+)/);\n  return m ? parseInt(m[1], 10) : 0;\n}\n\n/**\n * Parse matched_generations:\n * Exemples possibles:\n * - \"SMCR (Gen2) 2021–2024\"\n * - \"SMCR (Gen2) 2021→\"\n * - \"(LC) 2018-2020\"\n * - \"2021→\"\n */\nfunction parseGenerations(value) {\n  const s = String(value || \"\").trim();\n  if (!s) return { label: \"\", yStart: \"\", yEnd: \"\" };\n\n  // label = contenu entre parenthèses\n  const labelMatch = s.match(/\\(([^)]+)\\)/);\n  const label = labelMatch ? labelMatch[1].trim() : \"\";\n\n  // Range \"2002–2003\" ou \"2002-2003\"\n  const rangeMatch = s.match(/(\\d{4})\\s*[-–]\\s*(\\d{4})/);\n  if (rangeMatch) {\n    return { label, yStart: Number(rangeMatch[1]), yEnd: Number(rangeMatch[2]) };\n  }\n\n  // Arrow \"2018→\" => fin = année courante\n  const arrowMatch = s.match(/(\\d{4})\\s*→/);\n  if (arrowMatch) {\n    return { label, yStart: Number(arrowMatch[1]), yEnd: CURRENT_YEAR };\n  }\n\n  // Fallback: une seule année\n  const oneYear = s.match(/(\\d{4})/);\n  if (oneYear) {\n    const y = Number(oneYear[1]);\n    return { label, yStart: y, yEnd: y };\n  }\n\n  return { label: \"\", yStart: \"\", yEnd: \"\" };\n}\n\n// ===============================\n// MAPPING\n// ===============================\nfunction mapField(item) {\n  const gen = parseGenerations(item.matched_generations);\n\n  return {\n    json: {\n      // ===============================\n      // IDENTITÉ ANNONCE\n      // ===============================\n      Nom_annonce: item[\"text-headline-1-expanded\"] || item.annonce_title || \"\",\n      Url_Https: item[\"absolute href\"] || item.annonce_url || \"\",\n\n      // ✅ Favoris (chiffre uniquement)\n      \"personnes ont déjà ajouté cette annonce en favori\": extractFavoris(item[\"u-shadow-border-transition\"]),\n      \n\"nombre de photos supplémentaires\": extractNbPhotos(item[\"u-shadow-border-transition (2)\"]),\n\n      // ===============================\n      // DATE / HEURE\n      // ===============================\n      \"Date de mise en publication\": item[\"text-caption\"] || \"\",\n      \"Heure de mise en publication\": item[\"text-caption (2)\"] || \"\",\n\n      // ===============================\n      // PRIX\n      // ===============================\n      Prix_affiche: item[\"flex\"] || item[\"text-headline-1\"] || \"\",\n\n      // ===============================\n      // ✅ PHOTOS (3 clés récupérées)\n      // ===============================\n      Photo_1: item[\"size-full src\"] || \"\",\n      Photo_2: item[\"size-full src (2)\"] || \"\",\n      Photo_3: item[\"size-full src (3)\"] || \"\",\n\n          // ===============================\n    // VEHICULE / VENDEUR (RENOMMÉ)\n    // ===============================\n    \"nom du vendeur pro\": item[\"text-body-1\"] || \"\",\n    \n    \"année du modèle\": item[\"text-body-1 (4)\"] || \"\",\n    \n    \"Kilométrage\": item[\"text-body-1 (5)\"] || \"\",\n    \n    Mise_en_circulation: item[\"text-body-1 (6)\"] || \"\",\nCylindree_cc: extractCC(item[\"text-body-1 (7)\"]),\n\n      // ===============================\n      // ✅ DESCRIPTION COMPLÈTE\n      // ===============================\n\"Description de l'annonce\": item.annonce_description || \"\",\n\n      // ===============================\n      // STATUT / VENDEUR\n      // ===============================\n      Statut_annonce: item[\"box-border\"] || \"\",\n\n      // ✅ 3 clés récupérées côté vendeur\n      Nom_vendeur: item[\"text-headline-1 (2)\"] || \"\",\n      \"nombre d’avis\": item[\"text-body-2\"] || \"\",\n      \"Dernière activité\": item[\"text-body-2 (2)\"] || \"\",\n\n      // (tu peux garder ces noms internes si tu en as encore besoin ailleurs)\n      Paiement_ou_SIREN: item[\"text-body-2\"] || \"\",\n      Infos_vendeur: item[\"text-body-2 (2)\"] || \"\",\n\n      // ===============================\n      // MATCHING\n      // ===============================\n      matched_marque: item.matched_marque || \"\",\n      matched_modele: item.matched_modele || \"\",\n      matched_generations: item.matched_generations || \"\",\n\n      generation_label: gen.label || \"\",\n      generation_year_start: gen.yStart || \"\",\n      generation_year_end: gen.yEnd || \"\",\n\n      matched_score: item.matched_score || \"\",\n      matched_quality: item.matched_quality || \"\",\n      needs_review: item.needs_review ?? false,\n    }\n  };\n}\n\n// ===============================\n// RUN\n// ===============================\nreturn $input.all().map(i => mapField(i.json));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        224
+      ],
+      "id": "9e55a54b-1596-4f51-a54e-e16619e1e3ca",
+      "name": "Rename Columns 1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ===============================\n// HELPERS\n// ===============================\nconst CURRENT_YEAR = 2026;\n\nfunction extractFavoris(value) {\n  if (!value) return 0;\n  const m = String(value).match(/(\\d+)\\s*$/); // prend le dernier nombre\n  return m ? parseInt(m[1], 10) : 0;\n}\nfunction extractCC(value) {\n  if (!value) return \"\";\n\n  const m = String(value).match(/(\\d{2,4}(\\.\\d+)?)/);\n  if (!m) return \"\";\n\n  const cc = parseFloat(m[1]);\n\n  // ❌ si inférieur à 49.8 → ne rien afficher\n  if (cc < 49.8) return \"\";\n\n  return cc;\n}\n\n\nfunction extractNbPhotos(value) {\n  if (!value) return 0;\n\n  const s = String(value);\n\n  // ex: \"Voir les 5 photos\" / \"Voir les photos\" / \"Voir 12 photos\"\n  const m = s.match(/(\\d+)/);\n  return m ? parseInt(m[1], 10) : 0;\n}\n\n/**\n * Parse matched_generations:\n * Exemples possibles:\n * - \"SMCR (Gen2) 2021–2024\"\n * - \"SMCR (Gen2) 2021→\"\n * - \"(LC) 2018-2020\"\n * - \"2021→\"\n */\nfunction parseGenerations(value) {\n  const s = String(value || \"\").trim();\n  if (!s) return { label: \"\", yStart: \"\", yEnd: \"\" };\n\n  // label = contenu entre parenthèses\n  const labelMatch = s.match(/\\(([^)]+)\\)/);\n  const label = labelMatch ? labelMatch[1].trim() : \"\";\n\n  // Range \"2002–2003\" ou \"2002-2003\"\n  const rangeMatch = s.match(/(\\d{4})\\s*[-–]\\s*(\\d{4})/);\n  if (rangeMatch) {\n    return { label, yStart: Number(rangeMatch[1]), yEnd: Number(rangeMatch[2]) };\n  }\n\n  // Arrow \"2018→\" => fin = année courante\n  const arrowMatch = s.match(/(\\d{4})\\s*→/);\n  if (arrowMatch) {\n    return { label, yStart: Number(arrowMatch[1]), yEnd: CURRENT_YEAR };\n  }\n\n  // Fallback: une seule année\n  const oneYear = s.match(/(\\d{4})/);\n  if (oneYear) {\n    const y = Number(oneYear[1]);\n    return { label, yStart: y, yEnd: y };\n  }\n\n  return { label: \"\", yStart: \"\", yEnd: \"\" };\n}\n\n// ===============================\n// MAPPING\n// ===============================\nfunction mapField(item) {\n  const gen = parseGenerations(item.matched_generations);\n\n  return {\n    json: {\n      // ===============================\n      // IDENTITÉ ANNONCE\n      // ===============================\n      Nom_annonce: item[\"text-headline-1-expanded\"] || item.annonce_title || \"\",\n      Url_Https: item[\"absolute href\"] || item.annonce_url || \"\",\n\n      // ✅ Favoris (chiffre uniquement)\n      \"personnes ont déjà ajouté cette annonce en favori\": extractFavoris(item[\"u-shadow-border-transition\"]),\n      \n\"nombre de photos supplémentaires\": extractNbPhotos(item[\"u-shadow-border-transition (2)\"]),\n\n      // ===============================\n      // DATE / HEURE\n      // ===============================\n      \"Date de mise en publication\": item[\"text-caption\"] || \"\",\n      \"Heure de mise en publication\": item[\"text-caption (2)\"] || \"\",\n\n      // ===============================\n      // PRIX\n      // ===============================\n      Prix_affiche: item[\"flex\"] || item[\"text-headline-1\"] || \"\",\n\n      // ===============================\n      // ✅ PHOTOS (3 clés récupérées)\n      // ===============================\n      Photo_1: item[\"size-full src\"] || \"\",\n      Photo_2: item[\"size-full src (2)\"] || \"\",\n      Photo_3: item[\"size-full src (3)\"] || \"\",\n\n          // ===============================\n    // VEHICULE / VENDEUR (RENOMMÉ)\n    // ===============================\n    \"nom du vendeur pro\": item[\"text-body-1\"] || \"\",\n    \n    \"année du modèle\": item[\"text-body-1 (4)\"] || \"\",\n    \n    \"Kilométrage\": item[\"text-body-1 (5)\"] || \"\",\n    \n    Mise_en_circulation: item[\"text-body-1 (6)\"] || \"\",\nCylindree_cc: extractCC(item[\"text-body-1 (7)\"]),\n\n      // ===============================\n      // ✅ DESCRIPTION COMPLÈTE\n      // ===============================\n\"Description de l'annonce\": item.annonce_description || \"\",\n\n      // ===============================\n      // STATUT / VENDEUR\n      // ===============================\n      Statut_annonce: item[\"box-border\"] || \"\",\n\n      // ✅ 3 clés récupérées côté vendeur\n      Nom_vendeur: item[\"text-headline-1 (2)\"] || \"\",\n      \"nombre d’avis\": item[\"text-body-2\"] || \"\",\n      \"Dernière activité\": item[\"text-body-2 (2)\"] || \"\",\n\n      // (tu peux garder ces noms internes si tu en as encore besoin ailleurs)\n      Paiement_ou_SIREN: item[\"text-body-2\"] || \"\",\n      Infos_vendeur: item[\"text-body-2 (2)\"] || \"\",\n\n      // ===============================\n      // MATCHING\n      // ===============================\n      matched_marque: item.matched_marque || \"\",\n      matched_modele: item.matched_modele || \"\",\n      matched_generations: item.matched_generations || \"\",\n\n      generation_label: gen.label || \"\",\n      generation_year_start: gen.yStart || \"\",\n      generation_year_end: gen.yEnd || \"\",\n\n      matched_score: item.matched_score || \"\",\n      matched_quality: item.matched_quality || \"\",\n      needs_review: item.needs_review ?? false,\n    }\n  };\n}\n\n// ===============================\n// RUN\n// ===============================\nreturn $input.all().map(i => mapField(i.json));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        432
+      ],
+      "id": "aca57852-e8d3-4a13-98c0-9e38f1c0a210",
+      "name": "Rename Columns 2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ===============================\n// HELPERS\n// ===============================\nconst CURRENT_YEAR = 2026;\n\nfunction extractFavoris(value) {\n  if (!value) return 0;\n  const m = String(value).match(/(\\d+)\\s*$/); // prend le dernier nombre\n  return m ? parseInt(m[1], 10) : 0;\n}\nfunction extractCC(value) {\n  if (!value) return \"\";\n\n  const m = String(value).match(/(\\d{2,4}(\\.\\d+)?)/);\n  if (!m) return \"\";\n\n  const cc = parseFloat(m[1]);\n\n  // ❌ si inférieur à 49.8 → ne rien afficher\n  if (cc < 49.8) return \"\";\n\n  return cc;\n}\n\n\nfunction extractNbPhotos(value) {\n  if (!value) return 0;\n\n  const s = String(value);\n\n  // ex: \"Voir les 5 photos\" / \"Voir les photos\" / \"Voir 12 photos\"\n  const m = s.match(/(\\d+)/);\n  return m ? parseInt(m[1], 10) : 0;\n}\n\n/**\n * Parse matched_generations:\n * Exemples possibles:\n * - \"SMCR (Gen2) 2021–2024\"\n * - \"SMCR (Gen2) 2021→\"\n * - \"(LC) 2018-2020\"\n * - \"2021→\"\n */\nfunction parseGenerations(value) {\n  const s = String(value || \"\").trim();\n  if (!s) return { label: \"\", yStart: \"\", yEnd: \"\" };\n\n  // label = contenu entre parenthèses\n  const labelMatch = s.match(/\\(([^)]+)\\)/);\n  const label = labelMatch ? labelMatch[1].trim() : \"\";\n\n  // Range \"2002–2003\" ou \"2002-2003\"\n  const rangeMatch = s.match(/(\\d{4})\\s*[-–]\\s*(\\d{4})/);\n  if (rangeMatch) {\n    return { label, yStart: Number(rangeMatch[1]), yEnd: Number(rangeMatch[2]) };\n  }\n\n  // Arrow \"2018→\" => fin = année courante\n  const arrowMatch = s.match(/(\\d{4})\\s*→/);\n  if (arrowMatch) {\n    return { label, yStart: Number(arrowMatch[1]), yEnd: CURRENT_YEAR };\n  }\n\n  // Fallback: une seule année\n  const oneYear = s.match(/(\\d{4})/);\n  if (oneYear) {\n    const y = Number(oneYear[1]);\n    return { label, yStart: y, yEnd: y };\n  }\n\n  return { label: \"\", yStart: \"\", yEnd: \"\" };\n}\n\n// ===============================\n// MAPPING\n// ===============================\nfunction mapField(item) {\n  const gen = parseGenerations(item.matched_generations);\n\n  return {\n    json: {\n      // ===============================\n      // IDENTITÉ ANNONCE\n      // ===============================\n      Nom_annonce: item[\"text-headline-1-expanded\"] || item.annonce_title || \"\",\n      Url_Https: item[\"absolute href\"] || item.annonce_url || \"\",\n\n      // ✅ Favoris (chiffre uniquement)\n      \"personnes ont déjà ajouté cette annonce en favori\": extractFavoris(item[\"u-shadow-border-transition\"]),\n      \n\"nombre de photos supplémentaires\": extractNbPhotos(item[\"u-shadow-border-transition (2)\"]),\n\n      // ===============================\n      // DATE / HEURE\n      // ===============================\n      \"Date de mise en publication\": item[\"text-caption\"] || \"\",\n      \"Heure de mise en publication\": item[\"text-caption (2)\"] || \"\",\n\n      // ===============================\n      // PRIX\n      // ===============================\n      Prix_affiche: item[\"flex\"] || item[\"text-headline-1\"] || \"\",\n\n      // ===============================\n      // ✅ PHOTOS (3 clés récupérées)\n      // ===============================\n      Photo_1: item[\"size-full src\"] || \"\",\n      Photo_2: item[\"size-full src (2)\"] || \"\",\n      Photo_3: item[\"size-full src (3)\"] || \"\",\n\n          // ===============================\n    // VEHICULE / VENDEUR (RENOMMÉ)\n    // ===============================\n    \"nom du vendeur pro\": item[\"text-body-1\"] || \"\",\n    \n    \"année du modèle\": item[\"text-body-1 (4)\"] || \"\",\n    \n    \"Kilométrage\": item[\"text-body-1 (5)\"] || \"\",\n    \n    Mise_en_circulation: item[\"text-body-1 (6)\"] || \"\",\nCylindree_cc: extractCC(item[\"text-body-1 (7)\"]),\n\n      // ===============================\n      // ✅ DESCRIPTION COMPLÈTE\n      // ===============================\n\"Description de l'annonce\": item.annonce_description || \"\",\n\n      // ===============================\n      // STATUT / VENDEUR\n      // ===============================\n      Statut_annonce: item[\"box-border\"] || \"\",\n\n      // ✅ 3 clés récupérées côté vendeur\n      Nom_vendeur: item[\"text-headline-1 (2)\"] || \"\",\n      \"nombre d’avis\": item[\"text-body-2\"] || \"\",\n      \"Dernière activité\": item[\"text-body-2 (2)\"] || \"\",\n\n      // (tu peux garder ces noms internes si tu en as encore besoin ailleurs)\n      Paiement_ou_SIREN: item[\"text-body-2\"] || \"\",\n      Infos_vendeur: item[\"text-body-2 (2)\"] || \"\",\n\n      // ===============================\n      // MATCHING\n      // ===============================\n      matched_marque: item.matched_marque || \"\",\n      matched_modele: item.matched_modele || \"\",\n      matched_generations: item.matched_generations || \"\",\n\n      generation_label: gen.label || \"\",\n      generation_year_start: gen.yStart || \"\",\n      generation_year_end: gen.yEnd || \"\",\n\n      matched_score: item.matched_score || \"\",\n      matched_quality: item.matched_quality || \"\",\n      needs_review: item.needs_review ?? false,\n    }\n  };\n}\n\n// ===============================\n// RUN\n// ===============================\nreturn $input.all().map(i => mapField(i.json));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        624
+      ],
+      "id": "8d58feb3-d419-45fc-ad19-e8b4d6fd7f90",
+      "name": "Rename Columns 3"
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 1184,
+        "width": 320
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -992,
+        192
+      ],
+      "typeVersion": 1,
+      "id": "2f92f0bb-597c-41ba-8281-5bd6d58d74e3",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "V2.2 Supabase intégrations",
+        "width": 1376,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -656,
+        16
+      ],
+      "typeVersion": 1,
+      "id": "3693b031-d1d6-4302-b183-2362e6205e3f",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1RY-oclATBSPoGnRBPVXIW3gdwJbuLqOsSVaFWpNXpkI/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 97826744,
+          "mode": "list",
+          "cachedResultName": "Datas à revoir",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1RY-oclATBSPoGnRBPVXIW3gdwJbuLqOsSVaFWpNXpkI/edit#gid=97826744"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Nom_annonce",
+              "displayName": "Nom_annonce",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Url_Https",
+              "displayName": "Url_Https",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Url_img_1",
+              "displayName": "Url_img_1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Url_Https_2",
+              "displayName": "Url_Https_2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Url_img_2",
+              "displayName": "Url_img_2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Url_Https_3",
+              "displayName": "Url_Https_3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Prix_BDD_non",
+              "displayName": "Prix_BDD_non",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Prix_Bdd_Ok",
+              "displayName": "Prix_Bdd_Ok",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Prix_Bdd_2_Ok",
+              "displayName": "Prix_Bdd_2_Ok",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ps_or_pro",
+              "displayName": "ps_or_pro",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "adv_or_pro_2",
+              "displayName": "adv_or_pro_2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Annee_du_modele",
+              "displayName": "Annee_du_modele",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Nombre_de_kilometres",
+              "displayName": "Nombre_de_kilometres",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "text_1",
+              "displayName": "text_1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "text_2",
+              "displayName": "text_2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "text_3",
+              "displayName": "text_3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ville_cp",
+              "displayName": "ville_cp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "situee_ville_cp",
+              "displayName": "situee_ville_cp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "matched_marque",
+              "displayName": "matched_marque",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "matched_modele",
+              "displayName": "matched_modele",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "matched_score",
+              "displayName": "matched_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "matched_cylindree",
+              "displayName": "matched_cylindree",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "matched_generations",
+              "displayName": "matched_generations",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "matched_coloris",
+              "displayName": "matched_coloris",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "matched_annee_debut",
+              "displayName": "matched_annee_debut",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "matched_annee_fin",
+              "displayName": "matched_annee_fin",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Url_Https_4",
+              "displayName": "Url_Https_4",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Url_Https_5",
+              "displayName": "Url_Https_5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Deja_Vu",
+              "displayName": "Deja_Vu",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "matching_engine",
+              "displayName": "matching_engine",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "16beac18-a214-4782-9236-be830c0870ba",
+      "name": "Save to Datas à revoir",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        944,
+        1264
+      ],
+      "typeVersion": 4
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        944,
+        1104
+      ],
+      "id": "9946cfa5-c8e0-4979-b20a-a92449a2bad1",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "50fa772e-ffc7-44c9-800f-113b3fdd5a43",
+              "leftValue": "={{ $json.matched_marque }}",
+              "rightValue": "={{\"\"}}",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        256,
+        640
+      ],
+      "id": "ad414736-7d8c-4ced-ae89-2960a0c0d742",
+      "name": "If3"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================\n// MATCHING v9.1 VERROUILLÉ (ANTI-FAUX-POSITIFS) + COVERAGE BOOST (LBC 2026 KEYS)\n// ✅ MAJ KEYS 2026 :\n// - Brand: text-body-1 (2)\n// - Title: text-body-1 (8) (version) puis text-headline-1-expanded puis relative\n// - Desc: text-body-1 (16) (desc complète) puis text-body-1 (14)\n// - Year: text-body-1 (4) puis text-body-1 (9)\n// - CC SAFE: cubic_capacity via text-body-1 href (5) (le + fiable) > texte \"xxx cc/cm3\", ignore \"xx km\"\n// - Model href: text-body-1 href (3) (page modèle)\n// =====================================================\n\nconst allItems = $input.all().map(i => i.json);\n\n// -------------------------\n// GET robust\n// -------------------------\nconst get = (obj, ...keys) => {\n  for (const k of keys) {\n    const v = obj?.[k];\n    if (v !== undefined && v !== null && String(v).trim() !== \"\") return v;\n  }\n  return \"\";\n};\n\nconst pick = (obj, keys) => {\n  for (const k of keys) {\n    const v = obj?.[k];\n    if (v !== undefined && v !== null && String(v).trim() !== \"\") return v;\n  }\n  return \"\";\n};\n\n// -------------------------\n// Champs annonces (✅ NEW KEYS 2026)\n// -------------------------\nconst getAnnonceTitle = (a) =>\n  get(a,\n    \"text-body-1 (8)\",            // ✅ version / nom modèle détaillé (souvent très discriminant)\n    \"text-headline-1-expanded\",   // fallback si présent\n    \"annonce_title\",\n    \"relative\"\n  );\n\nconst getAnnonceDesc  = (a) =>\n  get(a,\n    \"text-body-1 (16)\",           // ✅ description complète (ton exemple)\n    \"text-body-1 (14)\",           // fallback ancien mapping\n    \"description\",\n    \"annonce_desc\"\n  );\n\nconst getAnnonceUrl   = (a) =>\n  get(a,\n    \"absolute href\",\n    \"annonce_url\",\n    \"absolute href (1)\",\n    \"absolute href (2)\",\n    \"relative\"\n  );\n\n// ✅ Brand: maintenant text-body-1 (2)\nconst getAnnonceBrand = (a) => get(a, \"text-body-1 (2)\", \"annonce_brand_input\");\n\n// année brute: (4) puis (9)\nconst getAnnonceYearRaw1 = (a) => get(a, \"text-body-1 (4)\", \"annonce_year_input_1\");\nconst getAnnonceYearRaw2 = (a) => get(a, \"text-body-1 (9)\", \"annonce_year_input_2\");\n\n// ✅ cc via filtre Leboncoin (le + fiable) : href(5) contient cubic_capacity:XXXX\nconst getAnnonceCCHref = (a) => get(a, \"text-body-1 href (5)\");\n\n// ✅ modèle via href (3) (souvent u_moto_model:xxx)\nconst getAnnonceModelHref = (a) => get(a, \"text-body-1 href (3)\");\n\n// -------------------------\n// Champs modèles (référentiel)\n// -------------------------\nconst getModeleField = (m) => pick(m, [\"Modèle\",\"Modele\",\"modele\",\"Model\",\"MODELE\",\"Modèle \"]) || \"\";\nconst getMarqueField = (m) => pick(m, [\"Marque\",\"marque\",\"MARQUE\",\"Brand\",\"brand\"]) || \"\";\nconst getYearStartField = (m) => pick(m, [\"Année début\",\"Annee debut\",\"Année début \",\"Year start\",\"yearStart\"]) || \"\";\nconst getYearEndField   = (m) => pick(m, [\"Année fin\",\"Annee fin\",\"Année fin \",\"Year end\",\"yearEnd\"]) || \"\";\n\n// -------------------------\n// Normalisation + tokens\n// -------------------------\nconst STOP = new Set([\n  \"moto\",\"motos\",\"scooter\",\"roadster\",\"trail\",\"enduro\",\"cross\",\n  \"vend\",\"vente\",\"vends\",\"urgent\",\"etat\",\"tres\",\"super\",\"parfait\",\"excellent\",\n  \"paiement\",\"securise\",\"option\",\"full\",\"abs\",\"a2\",\"ct\",\"ok\",\n  \"km\",\"kms\",\"kilometrage\",\"kilometres\",\"boite\",\"vitesse\",\"manuelle\",\"automatique\",\n  \"prix\",\"euro\",\"eur\",\"garantie\",\"factures\",\"entretien\",\"revision\",\"controle\"\n]);\n\nfunction normalize(text) {\n  if (!text) return \"\";\n  let s = String(text)\n    .normalize(\"NFD\")\n    .replace(/[\\u0300-\\u036f]/g, \"\")\n    .toLowerCase();\n\n  s = s.replace(/[/|]/g, \" \");\n  s = s.replace(/[^a-z0-9]+/g, \" \");\n  s = s.replace(/\\s+/g, \" \").trim();\n\n  s = s.replace(/\\b(mt)\\s*0?(\\d{2})\\b/g, \"$1$2\");\n  s = s.replace(/\\b(fz)\\s*(\\d)\\b/g, \"$1$2\");\n  s = s.replace(/\\b(gs)\\s*(\\d{3,4})\\b/g, \"$1$2\");\n  s = s.replace(/\\b(dl)\\s*(\\d{3,4})\\b/g, \"$1$2\");\n  s = s.replace(/\\b(v\\s*strom)\\b/g, \"vstrom\");\n  s = s.replace(/\\b(v[-\\s]?strom)\\b/g, \"vstrom\");\n  s = s.replace(/\\b(x)\\s*(max)\\b/g, \"xmax\");\n\n  return s;\n}\n\nconst ALLOW_1LETTER = new Set([\"r\",\"x\"]);\n\nfunction splitAlphaNum(tok) {\n  const parts = tok.match(/[a-z]+|\\d+/g);\n  return parts && parts.length > 1 ? parts : [];\n}\n\nfunction tokenizeModel(text) {\n  const n = normalize(text);\n  if (!n) return [];\n\n  const raw = n.split(\" \").filter(Boolean);\n  const out = [];\n\n  for (const t0 of raw) {\n    const t = t0.trim();\n    if (!t) continue;\n\n    const parts = splitAlphaNum(t);\n    if (parts.length) out.push(...parts);\n    else out.push(t);\n  }\n\n  return out.filter(t => {\n    if (!t) return false;\n    if (STOP.has(t)) return false;\n    if (/^\\d+$/.test(t)) return true;\n    if (t.length >= 2) return true;\n    return ALLOW_1LETTER.has(t);\n  });\n}\n\nfunction tokenize(text) {\n  const n = normalize(text);\n  if (!n) return [];\n\n  const raw = n.split(\" \").filter(Boolean);\n  const out = [];\n\n  for (const t0 of raw) {\n    const t = t0.trim();\n    if (!t) continue;\n\n    out.push(t);\n    const parts = splitAlphaNum(t);\n    if (parts.length) out.push(...parts);\n  }\n\n  return out.filter(t => {\n    if (!t) return false;\n    if (STOP.has(t)) return false;\n    if (/^\\d+$/.test(t)) return true;\n    return t.length >= 2;\n  });\n}\n\nconst tokensAlphaOnlyModel = (tokens) => tokens.filter(t => /[a-z]/.test(t));\nconst tokensAlphaOnly = (tokens) => tokens.filter(t => /[a-z]/.test(t));\n\n// -------------------------\n// Année (robuste)\n// -------------------------\nfunction parseYearMonth(s) {\n  const str = String(s || \"\").trim();\n  if (!str) return { year: 0, month: 0 };\n\n  const mmyyyy = str.match(/\\b(0?[1-9]|1[0-2])\\s*\\/\\s*((19|20)\\d{2})\\b/);\n  if (mmyyyy) return { month: parseInt(mmyyyy[1], 10), year: parseInt(mmyyyy[2], 10) };\n\n  const yyyy = str.match(/\\b(19|20)\\d{2}\\b/);\n  if (yyyy) return { month: 0, year: parseInt(yyyy[0], 10) };\n\n  return { year: 0, month: 0 };\n}\n\nfunction pickAnnonceYear(a, adText) {\n  const d2 = parseYearMonth(getAnnonceYearRaw2(a));\n  if (d2.year) return d2.year;\n\n  const d1 = parseYearMonth(getAnnonceYearRaw1(a));\n  if (d1.year) return d1.year;\n\n  const m = String(adText || \"\").match(/\\b(19|20)\\d{2}\\b/);\n  if (m) return parseInt(m[0], 10);\n\n  return 0;\n}\n\n// -------------------------\n// CC SAFE (anti \"50 km\")\n// -------------------------\nfunction ccFromHref(href) {\n  const s = String(href || \"\");\n  const m = s.match(/cubic_capacity:(\\d{2,4})/i);\n  return m ? parseInt(m[1], 10) : 0;\n}\n\nfunction extractCCFromText(text) {\n  const raw = String(text || \"\");\n  if (!raw.trim()) return 0;\n\n  const noKm = raw.replace(/\\b(\\d{1,6})\\s*km\\b/gi, \" \");\n  const s = normalize(noKm);\n\n  let m = s.match(/\\b(\\d{2,4})\\s*(cc|cm3|cm 3|ccm)\\b/);\n  if (m) return parseInt(m[1], 10);\n\n  m = s.match(/\\b(\\d{2,4})(cc|cm3|ccm)\\b/);\n  if (m) return parseInt(m[1], 10);\n\n  return 0;\n}\n\nfunction getAnnonceCC(a, adText) {\n  const ccH = ccFromHref(getAnnonceCCHref(a));   // ✅ href(5)\n  if (ccH) return ccH;\n\n  const ccT = extractCCFromText(adText);\n  if (ccT) return ccT;\n\n  return 0;\n}\n\n// -------------------------\n// EXTRA: parse u_moto_model depuis href(3)\n// ex: ...u_moto_model:V-STROM%20650...\n// -------------------------\nfunction isGenericModelLabel(modelStr) {\n  const n = normalize(modelStr);\n  return (\n    n === \"autre\" ||\n    n.endsWith(\" autre\") ||\n    n.includes(\" autre \") ||\n    n.includes(\"_autre\") ||\n    n.includes(\" other\") ||\n    n.includes(\"others\") ||\n    n.includes(\"unknown\")\n  );\n}\n\nfunction cleanModelFromHref2(modelStr, brandNorm) {\n  if (!modelStr) return \"\";\n  let s = String(modelStr).replace(/_/g, \" \").trim();\n\n  if (brandNorm) {\n    const b = normalize(brandNorm);\n    const sNorm = normalize(s);\n    if (sNorm.startsWith(b + \" \")) {\n      s = s.slice(sNorm.indexOf(b) + b.length).trim();\n    }\n  }\n  if (isGenericModelLabel(s)) return \"\";\n  return s;\n}\n\nfunction decodePlus(s) {\n  return String(s || \"\").replace(/\\+/g, \" \");\n}\nfunction extractModelFromHref2(href2) {\n  const h = String(href2 || \"\");\n  if (!h) return \"\";\n  const m = h.match(/u_moto_model:([^+&]+)/i);\n  if (!m) return \"\";\n  try {\n    return decodeURIComponent(decodePlus(m[1]));\n  } catch (e) {\n    return decodePlus(m[1]);\n  }\n}\n\n// -------------------------\n// Similarités\n// -------------------------\nfunction jaccard(aTokens, bTokens) {\n  if (!aTokens.length || !bTokens.length) return 0;\n  const A = new Set(aTokens);\n  const B = new Set(bTokens);\n  let inter = 0;\n  for (const x of A) if (B.has(x)) inter++;\n  const union = A.size + B.size - inter;\n  return union ? inter / union : 0;\n}\n\nfunction coverageSet(adSet, modelTokens) {\n  if (!modelTokens.length) return 0;\n  let hit = 0;\n  for (const t of modelTokens) if (adSet.has(t)) hit++;\n  return hit / modelTokens.length;\n}\n\n// -------------------------\n// Dominant gate (A+B)\n// -------------------------\nconst extractNumbers = (text) => {\n  const s = normalize(text);\n  return (s.match(/\\b\\d{3,4}\\b/g) || []).map(n => parseInt(n, 10));\n};\n\nfunction getModelDominantTokens(modelRaw) {\n  const n = normalize(modelRaw);\n  const nums = n.match(/\\b\\d{3,4}\\b/g) || [];\n  if (nums.length) return nums.map(Number);\n  return tokenize(modelRaw).filter(t => /[a-z]/.test(t) && t.length >= 5);\n}\n\n// -------------------------\n// Split modèles / annonces\n// -------------------------\nconst modeles = [];\nconst annonces = [];\n\nfor (const item of allItems) {\n  const isModel = !!getMarqueField(item) && !!getModeleField(item) &&\n    (get(item, \"Type (M/S/E)\", \"Type(M/S/E)\", \"Type (M\\\\/S\\\\/E)\", \"Cylindrée (cc)\") !== \"\");\n\n  const isAnnonce = get(item, \"absolute href\", \"relative\", \"annonce_url\") !== \"\";\n  if (isModel) modeles.push(item);\n  else if (isAnnonce) annonces.push(item);\n}\n\nif (!modeles.length) {\n  return annonces.map(a => ({\n    json: {\n      ...a,\n      matched_marque: \"\",\n      matched_modele: \"\",\n      matched_cylindree: \"\",\n      matched_generations: \"\",\n      matched_coloris: \"\",\n      matched_annee_debut: \"\",\n      matched_annee_fin: \"\",\n      matching_engine: \"NO_MODELS_INPUT\",\n      matched_score: 0,\n      needs_review: true,\n      reason_no_match: \"no_models_input\"\n    }\n  }));\n}\n\n// -------------------------\n// Variantes modèle (alias \"/\")\n// -------------------------\nfunction modelVariants(modelRaw) {\n  const cleaned = String(modelRaw || \"\").replace(/[|]/g, \"/\");\n  const parts = cleaned.split(\"/\").map(p => normalize(p)).filter(Boolean);\n  return Array.from(new Set(parts));\n}\n\n// -------------------------\n// Index marques\n// -------------------------\nconst brandIndex = new Map();\n\nfor (const m of modeles) {\n  const brandRaw = getMarqueField(m);\n  const modelRaw = getModeleField(m);\n\n  const brandNorm = normalize(brandRaw);\n  const variants = modelVariants(modelRaw);\n\n  const ys = parseInt(getYearStartField(m) || 0, 10) || 0;\n  let ye = getYearEndField(m);\n  ye = (ye === null || ye === undefined || ye === \"\") ? 9999 : (parseInt(ye, 10) || 9999);\n\n  const cc = Math.round(Number(get(m, \"Cylindrée (cc)\") || 0)) || 0;\n\n  const variantAlphaTokens = variants\n    .map(v => tokensAlphaOnlyModel(tokenizeModel(v)))\n    .filter(t => t.length);\n\n  if (!brandNorm || variantAlphaTokens.length === 0) continue;\n\n  const dominants = getModelDominantTokens(modelRaw);\n\n  const prepared = {\n    raw: m,\n    brandNorm,\n    ys,\n    ye,\n    cc,\n    variants,\n    variantAlphaTokens,\n    combinedTok: tokenize(`${brandRaw} ${modelRaw}`),\n    dominants,\n    modelNoSpace: normalize(modelRaw).replace(/\\s+/g, \"\")\n  };\n\n  if (!brandIndex.has(brandNorm)) brandIndex.set(brandNorm, []);\n  brandIndex.get(brandNorm).push(prepared);\n}\n\nconst knownBrands = Array.from(brandIndex.keys()).sort((a, b) => b.length - a.length);\n\n// -------------------------\n// Paramètres SAFE (verrouillés mais + coverage)\n// -------------------------\nconst MIN_COV_ALPHA = 0.70;\nconst MIN_ACCEPT    = 0.78;\nconst FAST_COV      = 0.92;\nconst FAST_ACCEPT   = 0.72;\nconst CC_PENALTY    = 0.10;\nconst CC_BLOCK_DIFF = 250;\n\nfunction computeScore(adTok, adSet, p) {\n  let bestCov = 0;\n  for (const vat of p.variantAlphaTokens) {\n    const cov = coverageSet(adSet, vat);\n    if (cov > bestCov) bestCov = cov;\n  }\n  const jac = jaccard(adTok, p.combinedTok);\n  const score = (0.85 * bestCov) + (0.15 * jac);\n  return { score, bestCov, jac };\n}\n\n// -------------------------\n// MATCHING v9.1\n// -------------------------\nconst results = [];\n\nfor (const a of annonces) {\n  const title = getAnnonceTitle(a);\n  const desc  = getAnnonceDesc(a);\n\n  // ✅ champs utiles (MAJ indices 2026)\n  const extraFields = [\n    get(a, \"text-body-1 (2)\"),   // marque\n    get(a, \"text-body-1 (3)\"),   // modèle (souvent vide)\n    get(a, \"text-body-1 (4)\"),   // année\n    get(a, \"text-body-1 (5)\"),   // km\n    get(a, \"text-body-1 (7)\"),   // cc (souvent)\n    get(a, \"text-body-1 (8)\"),   // version (très utile)\n    get(a, \"text-body-1 (9)\"),   // mois/année\n  ].filter(Boolean).join(\" \");\n\n  const url = getAnnonceUrl(a);\n\n  const yearBlob = `${getAnnonceYearRaw1(a)} ${getAnnonceYearRaw2(a)}`.trim();\n  const hrefCC = getAnnonceCCHref(a) || \"\";      // ✅ href(5)\n  const hrefModel = getAnnonceModelHref(a) || \"\"; // ✅ href(3)\n  const rawModelFromHref2 = extractModelFromHref2(hrefModel);\n\n  const modelFromHref2 = rawModelFromHref2 || \"\";\n\n  const adTextBase = `${title} ${desc} ${extraFields} ${yearBlob} ${hrefCC} ${modelFromHref2}`.trim();\n\n  let brandAnnonce = normalize(getAnnonceBrand(a));\n  const adNormBase = normalize(adTextBase);\n\n  if (!brandAnnonce) {\n    for (const b of knownBrands) {\n      if (adNormBase.includes(b)) { brandAnnonce = b; break; }\n    }\n  }\n\n  const modelFromHref2Clean = cleanModelFromHref2(modelFromHref2, brandAnnonce);\n\n  const adTextUsed = modelFromHref2Clean\n    ? `${adTextBase} ${modelFromHref2Clean}`.trim()\n    : adTextBase;\n\n  const adNorm    = normalize(adTextUsed);\n  const adTok     = tokenize(adTextUsed);\n  const adSet     = new Set(adTok);\n  const adNumbers = extractNumbers(adTextUsed);\n\n  const annonceYear = pickAnnonceYear(a, adTextUsed);\n  const annonceCC   = getAnnonceCC(a, adTextUsed);\n\n  if (!brandAnnonce || !brandIndex.has(brandAnnonce)) {\n    results.push({\n      json: {\n        ...a,\n        annonce_title: title,\n        annonce_url: url,\n\n        annonce_brand_input: getAnnonceBrand(a) || \"\",\n        annonce_year_input_1: getAnnonceYearRaw1(a) || \"\",\n        annonce_year_input_2: getAnnonceYearRaw2(a) || \"\",\n        annonce_year_resolved: annonceYear || \"\",\n        annonce_cc_resolved: annonceCC || \"\",\n\n        matched_marque: \"\",\n        matched_modele: \"\",\n        matched_generations: \"\",\n        matched_coloris: \"\",\n        matched_annee_debut: \"\",\n        matched_annee_fin: \"\",\n        matched_cylindree: \"\",\n\n        matched_score: 0,\n        matching_engine: \"NO_MATCH\",\n        needs_review: true,\n        reason_no_match: \"brand_not_found\",\n\n        _match_debug: {\n          detectedBrand: brandAnnonce || null,\n          adTextPreview: adTextUsed.slice(0, 250),\n          modelFromHref2: modelFromHref2Clean || \"\",\n          hrefModel: hrefModel || \"\",\n          hrefCC: hrefCC || \"\",\n          yearBlob,\n          adNumbers,\n          ccResolved: annonceCC || 0,\n          yearResolved: annonceYear || 0,\n          adTokensCount: adTok.length,\n        }\n      }\n    });\n    continue;\n  }\n\n  const baseCandidates = brandIndex.get(brandAnnonce);\n\n  const passes = [{ useYear: true }, { useYear: false }];\n\n  let bestPrepared = null;\n  let bestRaw = null;\n  let bestScore = 0;\n  let bestCov = 0;\n  let bestJac = 0;\n  let usedYearFilter = false;\n  let ccPenaltyApplied = false;\n\n  let dominantGateRejectedCount = 0;\n  let dominantGateBypassCount = 0;\n\n  const adNoSpace = normalize(adTextUsed).replace(/\\s+/g, \"\");\n\n  for (const pass of passes) {\n    let foundInPass = false;\n\n    for (const p of baseCandidates) {\n      if (pass.useYear && annonceYear) {\n        if (annonceYear < p.ys || annonceYear > p.ye) continue;\n      }\n\n      const { score, bestCov: covA, jac } = computeScore(adTok, adSet, p);\n      if (covA < MIN_COV_ALPHA) continue;\n\n      const doms = p.dominants || [];\n      const hasNumericDominant = doms.some(d => typeof d === \"number\");\n\n      let dominantHit = false;\n      for (const d of doms) {\n        if (typeof d === \"number\") {\n          if (adNumbers.includes(d)) { dominantHit = true; break; }\n        } else {\n          if (adSet.has(d)) { dominantHit = true; break; }\n        }\n      }\n\n      const modelNoSpace = p.modelNoSpace || \"\";\n      const strongBypass =\n        (covA >= FAST_COV) ||\n        (modelNoSpace && adNoSpace.includes(modelNoSpace));\n\n      if (hasNumericDominant && !dominantHit) {\n        dominantGateRejectedCount++;\n        continue;\n      }\n\n      if (!hasNumericDominant && doms.length && !dominantHit && !strongBypass) {\n        dominantGateRejectedCount++;\n        continue;\n      }\n\n      if (!dominantHit && strongBypass) dominantGateBypassCount++;\n\n      let penalty = 0;\n      if (annonceCC && p.cc) {\n        const diff = Math.abs(p.cc - annonceCC);\n        const strictBlock = (Math.min(p.cc, annonceCC) <= 600) ? 120 : CC_BLOCK_DIFF;\n\n        if (diff >= strictBlock) continue;\n        if (diff > 30) penalty = CC_PENALTY;\n      }\n\n      const finalScore = Math.max(0, score - penalty);\n\n      if (finalScore > bestScore) {\n        bestScore = finalScore;\n        bestPrepared = p;\n        bestRaw = p.raw;\n        bestCov = covA;\n        bestJac = jac;\n        usedYearFilter = pass.useYear && !!annonceYear;\n        ccPenaltyApplied = penalty > 0;\n        foundInPass = true;\n      }\n    }\n\n    if (pass.useYear && foundInPass) break;\n  }\n\n  const accept = !!bestPrepared && (bestScore >= MIN_ACCEPT || (bestCov >= FAST_COV && bestScore >= FAST_ACCEPT));\n\n  results.push({\n    json: {\n      ...a,\n      annonce_title: title,\n      annonce_url: url,\n\n      annonce_brand_input: getAnnonceBrand(a) || \"\",\n      annonce_year_input_1: getAnnonceYearRaw1(a) || \"\",\n      annonce_year_input_2: getAnnonceYearRaw2(a) || \"\",\n      annonce_year_resolved: annonceYear || \"\",\n      used_year_filter: usedYearFilter,\n\n      annonce_cc_resolved: annonceCC || \"\",\n      cc_source_href: ccFromHref(getAnnonceCCHref(a)) || \"\",\n\n      matched_marque: accept ? (getMarqueField(bestRaw) || get(bestRaw, \"Marque\") || \"\") : \"\",\n      matched_modele: accept ? (getModeleField(bestRaw) || get(bestRaw, \"Modèle\") || \"\") : \"\",\n      matched_generations: accept ? (get(bestRaw, \"Spéc/Génération\") || get(bestRaw, \"Spec/Generation\") || \"\") : \"\",\n      matched_coloris: accept ? (get(bestRaw, \"Coloris commercial\") || \"\") : \"\",\n      matched_annee_debut: accept ? (get(bestRaw, \"Année début\") || getYearStartField(bestRaw) || \"\") : \"\",\n      matched_annee_fin: accept ? (get(bestRaw, \"Année fin\") || getYearEndField(bestRaw) || \"\") : \"\",\n      matched_cylindree: accept ? (get(bestRaw, \"Cylindrée (cc)\") || \"\") : \"\",\n\n      matched_ok: !!accept,\n      matched_quality: accept ? \"match\" : \"no_match\",\n      needs_review: !accept,\n\n      matched_score: accept ? Number(bestScore.toFixed(3)) : 0,\n      matching_engine: accept ? \"AUTO_V9_1_LOCKED_SAFE_LBC2026\" : \"NO_MATCH\",\n      reason_no_match: accept ? \"\" : \"below_threshold_or_no_candidate_after_gates\",\n\n      _match_debug: {\n        detectedBrand: brandAnnonce || null,\n        adTextPreview: adTextUsed.slice(0, 250),\n        modelFromHref2: modelFromHref2Clean || \"\",\n        hrefModel: hrefModel || \"\",\n        hrefCC: hrefCC || \"\",\n        yearBlob,\n        adNumbers,\n        dominantGateRejectedCount,\n        dominantGateBypassCount,\n        bestModelDominants: accept ? (bestPrepared.dominants || []) : [],\n        covAlphaBest: Number(bestCov.toFixed(3)),\n        jacBest: Number(bestJac.toFixed(3)),\n        minCovAlpha: MIN_COV_ALPHA,\n        minAccept: MIN_ACCEPT,\n        fastCov: FAST_COV,\n        fastAccept: FAST_ACCEPT,\n        ccPenaltyApplied,\n        ccResolved: annonceCC || 0,\n        adTokensCount: adTok.length,\n      }\n    }\n  });\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32,
+        640
+      ],
+      "id": "ec53007b-5c62-42ac-9240-7ae83aec01ba",
+      "name": "3rd match"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "50fa772e-ffc7-44c9-800f-113b3fdd5a43",
+              "leftValue": "={{ $json.matched_marque }}",
+              "rightValue": "{{\"\"}}",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        256,
+        864
+      ],
+      "id": "d62a02f1-acb1-4adf-88c9-3de850feca4f",
+      "name": "If4"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -448,
+        864
+      ],
+      "id": "d1b2dabd-f8a3-42ca-b4ac-d1c5dcfa2f34",
+      "name": "Merge n°"
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 1200,
+        "width": 320,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        800,
+        192
+      ],
+      "typeVersion": 1,
+      "id": "aeb7f7f9-c499-4926-8f9b-818567fe726c",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 176,
+        "width": 1376,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -656,
+        208
+      ],
+      "typeVersion": 1,
+      "id": "589ea2a4-66a4-41dd-be10-f2bb8d8c458a",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 176,
+        "width": 1376,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -656,
+        416
+      ],
+      "typeVersion": 1,
+      "id": "be817289-b548-4b55-b1f1-5dedc14792c8",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 176,
+        "width": 1376,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -656,
+        608
+      ],
+      "typeVersion": 1,
+      "id": "9a943c56-3e63-4ab9-8c37-0c607a93a5db",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 176,
+        "width": 1376,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -656,
+        816
+      ],
+      "typeVersion": 1,
+      "id": "3166d44c-d751-48f5-bdd9-f07646d8141b",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "50fa772e-ffc7-44c9-800f-113b3fdd5a43",
+              "leftValue": "={{ $json.matched_marque }}",
+              "rightValue": "={{\"\"}}",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        272,
+        1072
+      ],
+      "id": "de367e27-96a9-4de5-8b33-1816f73f33d0",
+      "name": "If6"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -432,
+        1088
+      ],
+      "id": "624d29ad-49e6-4f51-abbf-61c3e6dbf544",
+      "name": "Merge n°1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ===============================\n// HELPERS\n// ===============================\nconst CURRENT_YEAR = 2026;\n\nfunction extractFavoris(value) {\n  if (!value) return 0;\n  const m = String(value).match(/(\\d+)\\s*$/); // prend le dernier nombre\n  return m ? parseInt(m[1], 10) : 0;\n}\nfunction extractCC(value) {\n  if (!value) return \"\";\n\n  const m = String(value).match(/(\\d{2,4}(\\.\\d+)?)/);\n  if (!m) return \"\";\n\n  const cc = parseFloat(m[1]);\n\n  // ❌ si inférieur à 49.8 → ne rien afficher\n  if (cc < 49.8) return \"\";\n\n  return cc;\n}\n\n\nfunction extractNbPhotos(value) {\n  if (!value) return 0;\n\n  const s = String(value);\n\n  // ex: \"Voir les 5 photos\" / \"Voir les photos\" / \"Voir 12 photos\"\n  const m = s.match(/(\\d+)/);\n  return m ? parseInt(m[1], 10) : 0;\n}\n\n/**\n * Parse matched_generations:\n * Exemples possibles:\n * - \"SMCR (Gen2) 2021–2024\"\n * - \"SMCR (Gen2) 2021→\"\n * - \"(LC) 2018-2020\"\n * - \"2021→\"\n */\nfunction parseGenerations(value) {\n  const s = String(value || \"\").trim();\n  if (!s) return { label: \"\", yStart: \"\", yEnd: \"\" };\n\n  // label = contenu entre parenthèses\n  const labelMatch = s.match(/\\(([^)]+)\\)/);\n  const label = labelMatch ? labelMatch[1].trim() : \"\";\n\n  // Range \"2002–2003\" ou \"2002-2003\"\n  const rangeMatch = s.match(/(\\d{4})\\s*[-–]\\s*(\\d{4})/);\n  if (rangeMatch) {\n    return { label, yStart: Number(rangeMatch[1]), yEnd: Number(rangeMatch[2]) };\n  }\n\n  // Arrow \"2018→\" => fin = année courante\n  const arrowMatch = s.match(/(\\d{4})\\s*→/);\n  if (arrowMatch) {\n    return { label, yStart: Number(arrowMatch[1]), yEnd: CURRENT_YEAR };\n  }\n\n  // Fallback: une seule année\n  const oneYear = s.match(/(\\d{4})/);\n  if (oneYear) {\n    const y = Number(oneYear[1]);\n    return { label, yStart: y, yEnd: y };\n  }\n\n  return { label: \"\", yStart: \"\", yEnd: \"\" };\n}\n\n// ===============================\n// MAPPING\n// ===============================\nfunction mapField(item) {\n  const gen = parseGenerations(item.matched_generations);\n\n  return {\n    json: {\n      // ===============================\n      // IDENTITÉ ANNONCE\n      // ===============================\n      Nom_annonce: item[\"text-headline-1-expanded\"] || item.annonce_title || \"\",\n      Url_Https: item[\"absolute href\"] || item.annonce_url || \"\",\n\n      // ✅ Favoris (chiffre uniquement)\n      \"personnes ont déjà ajouté cette annonce en favori\": extractFavoris(item[\"u-shadow-border-transition\"]),\n      \n\"nombre de photos supplémentaires\": extractNbPhotos(item[\"u-shadow-border-transition (2)\"]),\n\n      // ===============================\n      // DATE / HEURE\n      // ===============================\n      \"Date de mise en publication\": item[\"text-caption\"] || \"\",\n      \"Heure de mise en publication\": item[\"text-caption (2)\"] || \"\",\n\n      // ===============================\n      // PRIX\n      // ===============================\n      Prix_affiche: item[\"flex\"] || item[\"text-headline-1\"] || \"\",\n\n      // ===============================\n      // ✅ PHOTOS (3 clés récupérées)\n      // ===============================\n      Photo_1: item[\"size-full src\"] || \"\",\n      Photo_2: item[\"size-full src (2)\"] || \"\",\n      Photo_3: item[\"size-full src (3)\"] || \"\",\n\n          // ===============================\n    // VEHICULE / VENDEUR (RENOMMÉ)\n    // ===============================\n    \"nom du vendeur pro\": item[\"text-body-1\"] || \"\",\n    \n    \"année du modèle\": item[\"text-body-1 (4)\"] || \"\",\n    \n    \"Kilométrage\": item[\"text-body-1 (5)\"] || \"\",\n    \n    Mise_en_circulation: item[\"text-body-1 (6)\"] || \"\",\nCylindree_cc: extractCC(item[\"text-body-1 (7)\"]),\n\n      // ===============================\n      // ✅ DESCRIPTION COMPLÈTE\n      // ===============================\n\"Description de l'annonce\": item.annonce_description || \"\",\n\n      // ===============================\n      // STATUT / VENDEUR\n      // ===============================\n      Statut_annonce: item[\"box-border\"] || \"\",\n\n      // ✅ 3 clés récupérées côté vendeur\n      Nom_vendeur: item[\"text-headline-1 (2)\"] || \"\",\n      \"nombre d’avis\": item[\"text-body-2\"] || \"\",\n      \"Dernière activité\": item[\"text-body-2 (2)\"] || \"\",\n\n      // (tu peux garder ces noms internes si tu en as encore besoin ailleurs)\n      Paiement_ou_SIREN: item[\"text-body-2\"] || \"\",\n      Infos_vendeur: item[\"text-body-2 (2)\"] || \"\",\n\n      // ===============================\n      // MATCHING\n      // ===============================\n      matched_marque: item.matched_marque || \"\",\n      matched_modele: item.matched_modele || \"\",\n      matched_generations: item.matched_generations || \"\",\n\n      generation_label: gen.label || \"\",\n      generation_year_start: gen.yStart || \"\",\n      generation_year_end: gen.yEnd || \"\",\n\n      matched_score: item.matched_score || \"\",\n      matched_quality: item.matched_quality || \"\",\n      needs_review: item.needs_review ?? false,\n    }\n  };\n}\n\n// ===============================\n// RUN\n// ===============================\nreturn $input.all().map(i => mapField(i.json));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        576,
+        1056
+      ],
+      "id": "5b4bf2fc-396b-48cd-9ca7-2900f1ff2339",
+      "name": "Rename Columns 4"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c050bd3e-211f-4e9d-8faa-dfb68db87119",
+              "leftValue": "={{ $input.all().length }}",
+              "rightValue": "=1788",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -208,
+        1088
+      ],
+      "id": "e5efc14d-76ed-4d28-bacb-366456d1d209",
+      "name": "If7"
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 176,
+        "width": 1376
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -656,
+        1040
+      ],
+      "typeVersion": 1,
+      "id": "e37dd9cd-fbd2-43d8-90b5-d1b06f0754e8",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ==============================================\n// AUTO DETECTION MODELES vs ANNONCES (v10 - NEW KEYS LBC 2026)\n// - Brand: priorité text-body-1 (2) (sinon détection dans texte)\n// - Texte match: version text-body-1 (8) + description text-body-1 (16) + champs structurés\n// - Année: text-body-1 (4) puis (9) => pass 1 strict, pass 2 sans année\n// - CC: priorité champ dédié text-body-1 (7) / (13) puis href(5) cubic_capacity, sinon extraction SAFE\n// ✅ ANTI-UPGRADE: inchangé (dominants + adNumbers)\n// - Si insuffisant => match vide (plutôt que faux)\n// ==============================================\n\nconst allItems = $input.all().map(i => i.json);\n\n// ---------- GET robust ----------\nconst get = (obj, ...keys) => {\n  for (const k of keys) {\n    if (obj && obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== \"\") return obj[k];\n  }\n  return \"\";\n};\n\n// ---------- Champs annonces (✅ NEW KEYS) ----------\nconst getAnnonceTitle = (a) =>\n  get(a,\n    \"text-body-1 (8)\",              // ✅ version / vrai nom modèle (ex: 1050_Speed Triple 1050 ABS)\n    \"text-headline-1-expanded\",     // fallback si jamais\n    \"relative\"\n  );\n\nconst getAnnonceDesc  = (a) =>\n  get(a,\n    \"text-body-1 (16)\",             // ✅ description complète (ton exemple)\n    \"text-body-1 (14)\"              // fallback ancien mapping si présent\n  );\n\nconst getAnnonceUrl   = (a) =>\n  get(a,\n    \"absolute href\",\n    \"absolute href (1)\",\n    \"absolute href (2)\",\n    \"absolute href (3)\",\n    \"relative\"\n  );\n\n// ✅ Brand now is text-body-1 (2)\nconst getAnnonceBrand = (a) => get(a, \"text-body-1 (2)\");\n\n// ✅ Année: (4) puis fallback (9)\nconst getAnnonceYearRaw1 = (a) => get(a, \"text-body-1 (4)\"); // ex: 2013\nconst getAnnonceYearRaw2 = (a) => get(a, \"text-body-1 (9)\"); // ex: 11/2017\n\n// ✅ CC dedicated fields\nconst getAnnonceCCField1 = (a) => get(a, \"text-body-1 (7)\");      // ex: \"1050\"\nconst getAnnonceCCField2 = (a) => get(a, \"text-body-1 (13)\");     // ex: \"1050 cm³\" (parfois vide)\nconst getAnnonceCCHref   = (a) => get(a, \"text-body-1 href (5)\");  // ex: ... cubic_capacity:1050 ...\n\n// ---------- Champs modèles (référentiel) ----------\nconst pick = (obj, keys) => {\n  for (const k of keys) {\n    if (obj && obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== \"\") return obj[k];\n  }\n  return \"\";\n};\nconst getModeleField    = (m) => pick(m, [\"Modèle\", \"Modele\", \"modele\", \"Model\", \"MODELE\", \"Modèle \"]);\nconst getMarqueField    = (m) => pick(m, [\"Marque\", \"marque\", \"MARQUE\", \"Brand\", \"brand\"]);\nconst getYearStartField = (m) => pick(m, [\"Année début\", \"Annee debut\", \"Année début \", \"Year start\", \"yearStart\"]);\nconst getYearEndField   = (m) => pick(m, [\"Année fin\", \"Annee fin\", \"Année fin \", \"Year end\", \"yearEnd\"]);\n\n// ---------- Normalisation + alias ----------\nconst normalize = (text) => {\n  if (!text) return \"\";\n  let s = String(text)\n    .normalize(\"NFD\")\n    .replace(/[\\u0300-\\u036f]/g, \"\")\n    .toLowerCase();\n\n  s = s.replace(/[/|]/g, \" \");\n  s = s.replace(/[^a-z0-9]+/g, \" \");\n  s = s.replace(/\\s+/g, \" \").trim();\n\n  s = s.replace(/\\bevolution\\b/g, \"evo\");\n  s = s.replace(/\\bmonster evolution\\b/g, \"monster evo\");\n\n  s = s.replace(/\\b(mt)\\s*0?(\\d{2})\\b/g, \"$1$2\");\n  s = s.replace(/\\b(fz)\\s*(\\d)\\b/g, \"$1$2\");\n  s = s.replace(/\\b(x)\\s*(cape)\\b/g, \"$1$2\");\n\n  return s;\n};\n\nconst tokenize = (text) => {\n  const n = normalize(text);\n  return n ? n.split(\" \").filter(Boolean) : [];\n};\n\nconst isAlphaToken = (t) => /[a-z]/.test(t);\nconst tokensAlphaOnly = (tokens) => tokens.filter(t => isAlphaToken(t));\n\n// ---------- Similarité ----------\nconst jaccard = (aTokens, bTokens) => {\n  if (!aTokens.length || !bTokens.length) return 0;\n  const A = new Set(aTokens);\n  const B = new Set(bTokens);\n  let inter = 0;\n  for (const x of A) if (B.has(x)) inter++;\n  const union = A.size + B.size - inter;\n  return union ? inter / union : 0;\n};\n\nconst coverageSet = (adSet, modelTokens) => {\n  if (!modelTokens.length) return 0;\n  let hit = 0;\n  for (const t of modelTokens) if (adSet.has(t)) hit++;\n  return hit / modelTokens.length;\n};\n\n// ---------- Parsing année annonce ----------\nfunction parseYearMonth(s) {\n  const str = String(s || \"\").trim();\n  if (!str) return { year: 0, month: 0 };\n\n  const mmyyyy = str.match(/\\b(0?[1-9]|1[0-2])\\s*\\/\\s*((19|20)\\d{2})\\b/);\n  if (mmyyyy) return { month: parseInt(mmyyyy[1], 10), year: parseInt(mmyyyy[2], 10) };\n\n  const yyyy = str.match(/\\b(19|20)\\d{2}\\b/);\n  if (yyyy) return { month: 0, year: parseInt(yyyy[0], 10) };\n\n  return { year: 0, month: 0 };\n}\n\nfunction pickAnnonceYear(a) {\n  const d1 = parseYearMonth(getAnnonceYearRaw1(a));\n  if (d1.year) return d1.year;\n\n  const d2 = parseYearMonth(getAnnonceYearRaw2(a));\n  if (d2.year) return d2.year;\n\n  return 0;\n}\n\n// ---------- CC extraction SAFE (ignore \"xx km\") ----------\nfunction extractCCFromText(text) {\n  const raw = String(text || \"\");\n  if (!raw.trim()) return 0;\n\n  const noKm = raw.replace(/\\b(\\d{1,6})\\s*km\\b/gi, \" \");\n  const s = normalize(noKm);\n\n  let m = s.match(/\\b(\\d{2,4})\\s*(cc|cm3|cm 3|ccm)\\b/);\n  if (m) return parseInt(m[1], 10);\n\n  m = s.match(/\\b(\\d{2,4})(cc|cm3|ccm)\\b/);\n  if (m) return parseInt(m[1], 10);\n\n  return 0; // pas de guess via nombre isolé\n}\n\nfunction extractCCFromField(value) {\n  const m = String(value || \"\").match(/(\\d{2,4})/);\n  return m ? parseInt(m[1], 10) : 0;\n}\n\nfunction extractCCFromHref(href) {\n  const h = String(href || \"\");\n  const m = h.match(/cubic_capacity:(\\d{2,4})/i);\n  return m ? parseInt(m[1], 10) : 0;\n}\n\nfunction getAnnonceCC(a) {\n  // ✅ priorité aux champs dédiés\n  const cc1 = extractCCFromField(getAnnonceCCField1(a));\n  if (cc1) return cc1;\n\n  const cc2 = extractCCFromText(getAnnonceCCField2(a));\n  if (cc2) return cc2;\n\n  const cch = extractCCFromHref(getAnnonceCCHref(a));\n  if (cch) return cch;\n\n  // fallback SAFE: version/titre/desc\n  const ccTitle = extractCCFromText(getAnnonceTitle(a));\n  if (ccTitle) return ccTitle;\n\n  const ccDesc = extractCCFromText(getAnnonceDesc(a));\n  if (ccDesc) return ccDesc;\n\n  return 0;\n}\n\n// ---------- ANTI-UPGRADE: nombres structurels & tokens dominants ----------\nconst extractNumbers = (text) => {\n  const raw = String(text || \"\")\n    .replace(/\\b(\\d{1,6})\\s*km\\b/gi, \" \")\n    .replace(/\\b(0?[1-9]|1[0-2])\\s*\\/\\s*((19|20)\\d{2})\\b/g, \" \");\n  const s = normalize(raw);\n  return (s.match(/\\b\\d{3,4}\\b/g) || []).map(n => parseInt(n, 10));\n};\n\nfunction getModelDominantTokens(modelRaw) {\n  const n = normalize(modelRaw);\n  const nums = n.match(/\\b\\d{3,4}\\b/g) || [];\n  if (nums.length) return Array.from(new Set(nums.map(Number)));\n\n  const toks = tokenize(modelRaw);\n  const dominants = toks.filter(t => /\\d/.test(t) || t.length >= 5);\n  return Array.from(new Set(dominants));\n}\n\n// ---------- 1) Séparer modèles / annonces ----------\nconst modeles = [];\nconst annonces = [];\n\nfor (const item of allItems) {\n  const isModel =\n    getMarqueField(item) &&\n    getModeleField(item) &&\n    (get(item, \"Type (M/S/E)\", \"Type(M/S/E)\", \"Type (M\\\\/S\\\\/E)\") !== \"\");\n\n  if (isModel) modeles.push(item);\n  else annonces.push(item);\n}\n\n// ---------- 2) Préparer modèles + alias ----------\nfunction modelVariants(modelRaw) {\n  const cleaned = String(modelRaw || \"\").replace(/[|]/g, \"/\");\n  const parts = cleaned.split(\"/\").map(p => normalize(p)).filter(Boolean);\n  if (!parts.length) return [];\n  return Array.from(new Set(parts));\n}\n\n// ---------- Index marques ----------\nconst brandIndex = new Map();\n\nfor (const m of modeles) {\n  const brandRaw = getMarqueField(m);\n  const modelRaw = getModeleField(m);\n\n  const brandNorm = normalize(brandRaw);\n  const variants = modelVariants(modelRaw);\n\n  const ys = parseInt(getYearStartField(m) || 0, 10) || 0;\n  let ye = getYearEndField(m);\n  ye = (ye === null || ye === undefined || ye === \"\") ? 9999 : (parseInt(ye, 10) || 9999);\n\n  const cc = Math.round(Number(get(m, \"Cylindrée (cc)\") || 0)) || 0;\n\n  const variantAlphaTokens = variants.map(v => tokensAlphaOnly(tokenize(v))).filter(t => t.length);\n  if (!brandNorm || variantAlphaTokens.length === 0) continue;\n\n  const dominants = getModelDominantTokens(modelRaw);\n\n  const prepared = {\n    raw: m,\n    brandNorm,\n    ys,\n    ye,\n    cc,\n    variants,\n    variantAlphaTokens,\n    combinedTok: tokenize(`${brandRaw} ${modelRaw}`),\n    dominants\n  };\n\n  if (!brandIndex.has(brandNorm)) brandIndex.set(brandNorm, []);\n  brandIndex.get(brandNorm).push(prepared);\n}\n\nconst knownBrands = Array.from(brandIndex.keys()).sort((a, b) => b.length - a.length);\n\n// ---------- Paramètres SAFE ----------\nconst MIN_COV_ALPHA = 0.85;\nconst MIN_ACCEPT    = 0.78;\nconst CC_BLOCK_DIFF = 250;\nconst CC_PENALTY_SCORE = 0.12;\n\nfunction computeScore(adTok, adSet, p) {\n  let bestCov = 0;\n  for (const vat of p.variantAlphaTokens) {\n    const cov = coverageSet(adSet, vat);\n    if (cov > bestCov) bestCov = cov;\n  }\n  const jac = jaccard(adTok, p.combinedTok);\n  const score = (0.85 * bestCov) + (0.15 * jac);\n  return { score, bestCov, jac };\n}\n\n// ---------- Matching ----------\nconst results = [];\n\nfor (const a of annonces) {\n  const title = getAnnonceTitle(a);\n  const desc  = getAnnonceDesc(a);\n  const url   = getAnnonceUrl(a);\n\n  // ✅ enrichir le texte avec les champs structurés (brand/cc/model éventuel)\n  const brandField = getAnnonceBrand(a);\n  const ccField = getAnnonceCCField1(a) || getAnnonceCCField2(a) || \"\";\n  const modelField = get(a, \"text-body-1 (3)\"); // si parfois présent\n  const adText = `${title} ${brandField} ${modelField} ${ccField} ${desc}`.trim();\n\n  const adNorm = normalize(adText);\n  const adTok  = tokenize(adText);\n  const adSet  = new Set(adTok);\n\n  // marque: priorité text-body-1 (2), sinon détection dans texte\n  let brandAnnonce = normalize(brandField);\n  if (!brandAnnonce) {\n    for (const b of knownBrands) {\n      if (adNorm.includes(b)) { brandAnnonce = b; break; }\n    }\n  }\n\n  const annonceYear = pickAnnonceYear(a);\n  const annonceCC   = getAnnonceCC(a);\n\n  const adNumbers = extractNumbers(adText);\n\n  if (!brandAnnonce || !brandIndex.has(brandAnnonce)) {\n    results.push({\n      json: {\n        ...a,\n        annonce_title: title,\n        annonce_url: url,\n        annonce_brand_input: brandField || \"\",\n        annonce_year_resolved: annonceYear || \"\",\n        annonce_cc_resolved: annonceCC || \"\",\n        matched_marque: \"\",\n        matched_modele: \"\",\n        matched_generations: \"\",\n        matched_coloris: \"\",\n        matched_annee_debut: \"\",\n        matched_annee_fin: \"\",\n        matched_cylindree: \"\",\n        matched_score: 0,\n        matching_engine: \"NO_MATCH\",\n        needs_review: true,\n        reason_no_match: \"brand_not_found\",\n        _match_debug: { detectedBrand: brandAnnonce || null, adNumbers }\n      }\n    });\n    continue;\n  }\n\n  const baseCandidates = brandIndex.get(brandAnnonce);\n\n  const passes = [{ useYear: true }, { useYear: false }];\n\n  let bestPrepared = null;\n  let bestScore = 0;\n  let bestCov = 0;\n  let bestJac = 0;\n  let usedYearFilter = false;\n  let ccPenaltyApplied = false;\n  let dominantGateRejectedCount = 0;\n\n  for (const pass of passes) {\n    let foundInPass = false;\n\n    for (const p of baseCandidates) {\n      if (pass.useYear && annonceYear) {\n        if (annonceYear < p.ys || annonceYear > p.ye) continue;\n      }\n\n      // ✅ ANTI-UPGRADE: dominant obligatoire\n      let dominantHit = false;\n      if (p.dominants && p.dominants.length) {\n        for (const d of p.dominants) {\n          if (typeof d === \"number\") {\n            if (adNumbers.includes(d)) { dominantHit = true; break; }\n          } else {\n            if (adSet.has(d)) { dominantHit = true; break; }\n          }\n        }\n        if (!dominantHit) { dominantGateRejectedCount++; continue; }\n      }\n\n      const { score, bestCov: covA, jac } = computeScore(adTok, adSet, p);\n\n      if (covA < MIN_COV_ALPHA) continue;\n\n      let finalScore = score;\n      if (annonceCC && p.cc) {\n        const diff = Math.abs(p.cc - annonceCC);\n        if (diff >= CC_BLOCK_DIFF) continue;\n        if (diff > 30) { finalScore -= CC_PENALTY_SCORE; ccPenaltyApplied = true; }\n        if (finalScore < 0) finalScore = 0;\n      }\n\n      if (finalScore > bestScore) {\n        bestScore = finalScore;\n        bestPrepared = p;\n        bestCov = covA;\n        bestJac = jac;\n        usedYearFilter = pass.useYear && !!annonceYear;\n        foundInPass = true;\n      }\n    }\n\n    if (pass.useYear && foundInPass) break;\n  }\n\n  const accept = bestPrepared && bestScore >= MIN_ACCEPT;\n  const best = accept ? bestPrepared.raw : null;\n\n  results.push({\n    json: {\n      ...a,\n\n      annonce_title: title,\n      annonce_url: url,\n\n      annonce_brand_input: brandField || \"\",\n      annonce_year_input_1: getAnnonceYearRaw1(a) || \"\",\n      annonce_year_input_2: getAnnonceYearRaw2(a) || \"\",\n      annonce_year_resolved: annonceYear || \"\",\n      used_year_filter: usedYearFilter,\n      annonce_cc_resolved: annonceCC || \"\",\n\n      matched_marque: accept ? (getMarqueField(best) || get(best, \"Marque\") || \"\") : \"\",\n      matched_modele: accept ? (getModeleField(best) || get(best, \"Modèle\") || \"\") : \"\",\n      matched_generations: accept ? (get(best, \"Spéc/Génération\") || get(best, \"Spec/Generation\") || \"\") : \"\",\n      matched_coloris: accept ? (get(best, \"Coloris commercial\") || \"\") : \"\",\n      matched_annee_debut: accept ? (get(best, \"Année début\") || getYearStartField(best) || \"\") : \"\",\n      matched_annee_fin: accept ? (get(best, \"Année fin\") || getYearEndField(best) || \"\") : \"\",\n      matched_cylindree: accept ? (get(best, \"Cylindrée (cc)\") || \"\") : \"\",\n\n      matched_score: accept ? Number(bestScore.toFixed(3)) : 0,\n      matching_engine: accept ? \"AUTO_V10_SAFE_ANTI_UPGRADE\" : \"NO_MATCH\",\n      needs_review: !accept,\n      reason_no_match: accept ? \"\" : \"below_threshold_or_no_candidate_after_gates\",\n\n      _match_debug: {\n        detectedBrand: brandAnnonce || null,\n        adNumbers,\n        dominantGateRejectedCount,\n        bestModelDominants: bestPrepared ? (bestPrepared.dominants || []) : [],\n        covAlphaBest: Number(bestCov.toFixed(3)),\n        jacBest: Number(bestJac.toFixed(3)),\n        minCovAlpha: MIN_COV_ALPHA,\n        minAccept: MIN_ACCEPT,\n        ccPenaltyApplied,\n        ccResolved: annonceCC || 0,\n        adTokensCount: adTok.length,\n      }\n    }\n  });\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32,
+        448
+      ],
+      "id": "8bffef3c-7d46-4f1a-bc27-0ad25d8f5e53",
+      "name": "2nd Match"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ===============================\n// MATCHING MODELES vs ANNONCES (v10 - aligned with your real keys)\n// - Fix TITLE/PRICE/CC/DESC based on your latest scrape example\n// - Matching uses a rich \"titlePlus\" (brand/model/version/cc/desc)\n// - Output keeps \"*\" keys, removes \"/\" keys\n// ===============================\n\nconst items = $input.all().map(i => i.json);\n\n// =====================================================\n// 1) CONFIG DES CLES (ANNONCE + MODELE) — UPDATED\n// =====================================================\nconst K = {\n  ANNONCE: {\n    // ⚠️ Dans ton exemple, \"text-headline-1-expanded\" n'existe pas.\n    // La meilleure \"signature modèle\" est dans text-body-1 (8) (version constructeur).\n    TITLE: [\"text-headline-1-expanded\", \"text-body-1 (8)\", \"relative\"],\n\n    URL: [\"absolute href\", \"relative\"],\n\n    // ⚠️ Dans ton exemple: text-headline-1 = pseudo, prix = text-headline-1 (2) ou flex\n    PRICE: [\"text-headline-1 (2)\", \"flex\"],\n\n    DATE_DAY: [\"text-caption\"],\n    DATE_TIME: [\"text-caption (2)\"],\n\n    // vendeur (selon ton exemple)\n    SELLER_NAME: [\"text-headline-1 (3)\", \"text-headline-1\"], // \"Jeremy21\"\n    SELLER_LOCATION: [\"text-body-1\"],                        // \"Vignoles\"\n    SELLER_SINCE: [\"text-body-2 (2)\"],                       // \"Membre depuis ...\"\n    LAST_ACTIVITY: [\"text-body-2\", \"text-body-2 (3)\"],       // \"Dernière activité ...\"\n\n    // photos / favoris\n    PHOTO_1: [\"size-full src\"],\n    PHOTO_2: [\"size-full src (2)\"],\n    PHOTO_3: [\"size-full src (3)\"],\n    FAV_COUNT: [\"u-shadow-border-transition\"],\n    EXTRA_PHOTOS_TEXT: [\"u-shadow-border-transition (2)\"],\n\n    // véhicule\n    BRAND: [\"text-body-1 (2)\"],          // TRIUMPH\n    MODEL: [\"text-body-1 (3)\"],          // parfois vide\n    YEAR: [\"text-body-1 (4)\"],           // 2013\n    KM: [\"text-body-1 (5)\"],             // 50000 km\n\n    // ⚠️ Dans ton exemple, \"1050\" est en (7) (donc CC)\n    CC_NUM: [\"text-body-1 (7)\"],\n\n    // Version constructeur (souvent contient le vrai nom modèle)\n    VERSION: [\"text-body-1 (8)\"],\n\n    FIRST_REG: [\"text-body-1 (9)\"],\n\n    COLOR: [\"text-body-1 (11)\"],\n    LICENSE_TYPE: [\"text-body-1 (12)\"],\n\n    // parfois vide\n    CC_TXT: [\"text-body-1 (13)\"],\n\n    // ⚠️ Ta description réelle est en (16), pas (14)\n    DESC: [\"text-body-1 (16)\", \"text-body-1 (14)\"],\n\n    // \"href(5)\" contient cc+brand en URL mais tu ne veux pas le garder en sortie (\"/\"),\n    // on peut le lire pour aider le matching sans l'exporter.\n    CC_HREF: [\"text-body-1 href (5)\"],\n  },\n\n  MODELE: {\n    MARQUE: [\"Marque\", \"marque\", \"MARQUE\", \"Brand\", \"brand\"],\n    MODELE: [\"Modèle\", \"Modele\", \"modele\", \"Model\", \"MODELE\", \"Modèle \"],\n    YEAR_START: [\"Année début\", \"Annee debut\", \"Year start\", \"yearStart\"],\n    YEAR_END: [\"Année fin\", \"Annee fin\", \"Year end\", \"yearEnd\"],\n    CC: [\"Cylindrée (cc)\", \"Cylindree (cc)\", \"cc\", \"CC\"],\n    GENERATION: [\"Spéc/Génération\", \"Spec/Generation\", \"Génération\", \"Generation\"],\n    COLORIS: [\"Coloris commercial\", \"Coloris\", \"Couleur\", \"Color\"],\n  }\n};\n\n// =====================================================\n// 2) HELPERS\n// =====================================================\nconst pick = (obj, keys) => {\n  for (const k of keys) {\n    if (obj && obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== \"\") return obj[k];\n  }\n  return \"\";\n};\n\nconst normalize = (text) => {\n  if (!text) return \"\";\n  let s = String(text)\n    .normalize(\"NFD\")\n    .replace(/[\\u0300-\\u036f]/g, \"\")\n    .toLowerCase()\n    .replace(/[^a-z0-9]+/g, \" \")\n    .trim()\n    .replace(/\\s+/g, \" \");\n\n  s = s.replace(/\\bevolution\\b/g, \"evo\");\n  s = s.replace(/\\bmonster evolution\\b/g, \"monster evo\");\n  s = s.replace(/\\bduke\\s+125\\b/g, \"125 duke\");\n  s = s.replace(/\\bmt\\s*07\\b/g, \"mt07\");\n\n  return s;\n};\n\nconst tokenize = (text) => normalize(text).split(\" \").filter(t => t.length > 1);\n\nconst getMarqueField = (m) => pick(m, K.MODELE.MARQUE);\nconst getModeleField = (m) => pick(m, K.MODELE.MODELE);\nconst getYearStartField = (m) => pick(m, K.MODELE.YEAR_START);\nconst getYearEndField   = (m) => pick(m, K.MODELE.YEAR_END);\n\nconst getAnnonceTitle = (a) => pick(a, K.ANNONCE.TITLE) || \"\";\nconst getAnnonceUrl   = (a) => pick(a, K.ANNONCE.URL) || \"\";\n\nconst getAnnonceBrandRaw = (a) => pick(a, K.ANNONCE.BRAND) || \"\";\nconst getAnnonceModelRaw = (a) => pick(a, K.ANNONCE.MODEL) || \"\";\nconst getAnnonceYearRaw  = (a) => pick(a, K.ANNONCE.YEAR) || \"\";\nconst getAnnonceFirstRegRaw = (a) => pick(a, K.ANNONCE.FIRST_REG) || \"\";\nconst getAnnonceDescRaw  = (a) => pick(a, K.ANNONCE.DESC) || \"\";\n\nconst getAnnonceVersionRaw = (a) => pick(a, K.ANNONCE.VERSION) || \"\";\nconst getAnnonceCCNumRaw   = (a) => pick(a, K.ANNONCE.CC_NUM) || \"\";\nconst getAnnonceCCTxtRaw   = (a) => pick(a, K.ANNONCE.CC_TXT) || \"\";\n\n// =====================================================\n// 3) SIMILARITE\n// =====================================================\nconst jaccard = (a, b) => {\n  const sa = new Set(a), sb = new Set(b);\n  let inter = 0;\n  for (const v of sa) if (sb.has(v)) inter++;\n  const union = new Set([...sa, ...sb]).size;\n  return union === 0 ? 0 : inter / union;\n};\n\nconst isNumberToken = (t) => /^\\d+$/.test(t);\nconst isYearLike = (n) => n >= 1900 && n <= 2099;\n\nconst pickStructNums = (tokens) => {\n  const out = [];\n  for (const t of tokens) {\n    if (!isNumberToken(t)) continue;\n    const n = parseInt(t, 10);\n    if (!n) continue;\n    if (isYearLike(n)) continue;\n    if (n >= 2 && n <= 15) out.push(n);\n    else if (n >= 50 && n <= 2500) out.push(n);\n  }\n  return out;\n};\n\n// Levenshtein courte\nconst levToken = (a, b, maxDist = 1) => {\n  a = a || \"\"; b = b || \"\";\n  if (Math.abs(a.length - b.length) > maxDist) return maxDist + 1;\n\n  const dp = Array(b.length + 1);\n  for (let j = 0; j <= b.length; j++) dp[j] = j;\n\n  for (let i = 1; i <= a.length; i++) {\n    let prev = dp[0];\n    dp[0] = i;\n    let bestRow = dp[0];\n\n    for (let j = 1; j <= b.length; j++) {\n      const tmp = dp[j];\n      const cost = a[i - 1] === b[j - 1] ? 0 : 1;\n      dp[j] = Math.min(dp[j] + 1, dp[j - 1] + 1, prev + cost);\n      prev = tmp;\n      if (dp[j] < bestRow) bestRow = dp[j];\n    }\n    if (bestRow > maxDist) return maxDist + 1;\n  }\n  return dp[b.length];\n};\n\nfunction computeScoreModelOnly(titleNorm, titleTokens, pm) {\n  const W_JACC = 85;\n  const W_SUBSTR = 25;\n  const W_ALPHA_INTER = 18;\n  const W_FUZZY_SHORT = 12;\n  const MIN_ALPHA_MATCH = 1;\n\n  const titleAlpha = titleTokens.filter(t => !isNumberToken(t));\n  const modelAlpha = pm.modelTokens.filter(t => !isNumberToken(t));\n  if (modelAlpha.length === 0) return { score: 0, jacc: 0 };\n\n  // gate chiffres structurants\n  const modelNums = pickStructNums(pm.modelTokens);\n  const titleNums = pickStructNums(titleTokens);\n  if (modelNums.length && titleNums.length) {\n    const sA = new Set(modelNums);\n    let okNum = false;\n    for (const n of titleNums) if (sA.has(n)) { okNum = true; break; }\n    if (!okNum) return { score: 0, jacc: 0 };\n  }\n\n  let alphaExact = 0;\n  const titleAlphaSet = new Set(titleAlpha);\n  for (const mt of modelAlpha) if (titleAlphaSet.has(mt)) alphaExact++;\n\n  let alphaFuzzy = 0;\n  if (alphaExact === 0) {\n    for (const mt of modelAlpha) {\n      if (mt.length >= 2 && mt.length <= 4) {\n        for (const tt of titleAlpha) {\n          if (tt.length >= 2 && tt.length <= 4 && levToken(mt, tt, 1) <= 1) {\n            alphaFuzzy++;\n            break;\n          }\n        }\n      }\n    }\n  }\n\n  if ((alphaExact + alphaFuzzy) < MIN_ALPHA_MATCH) return { score: 0, jacc: 0 };\n\n  let score = 0;\n  if (pm.modelName && titleNorm.includes(pm.modelName)) score += W_SUBSTR;\n\n  const j = jaccard(titleTokens, pm.modelTokens);\n  score += j * W_JACC;\n\n  score += alphaExact * W_ALPHA_INTER;\n  score += alphaFuzzy * W_FUZZY_SHORT;\n\n  return { score, jacc: j };\n}\n\n// =====================================================\n// 4) ANNEE + CC\n// =====================================================\nfunction parseYearMonth(s) {\n  const str = String(s || \"\").trim();\n  if (!str) return { year: 0, month: 0 };\n\n  const mmyyyy = str.match(/\\b(0?[1-9]|1[0-2])\\s*\\/\\s*((19|20)\\d{2})\\b/);\n  if (mmyyyy) return { month: parseInt(mmyyyy[1], 10), year: parseInt(mmyyyy[2], 10) };\n\n  const yyyy = str.match(/\\b(19|20)\\d{2}\\b/);\n  if (yyyy) return { month: 0, year: parseInt(yyyy[0], 10) };\n\n  return { year: 0, month: 0 };\n}\n\nfunction pickAnnonceYear(a) {\n  const y1 = parseYearMonth(getAnnonceYearRaw(a));\n  if (y1.year) return y1.year;\n\n  const y2 = parseYearMonth(getAnnonceFirstRegRaw(a));\n  if (y2.year) return y2.year;\n\n  return 0;\n}\n\nfunction extractCCFromText(text) {\n  const s = normalize(text);\n\n  // \"1050 cm³\"\n  let m = s.match(/\\b(\\d{2,4})\\s*(cc|cm3|cm 3)\\b/);\n  if (m) return parseInt(m[1], 10);\n\n  // \"1050\"\n  m = s.match(/\\b(\\d{2,4})\\b/);\n  if (m) {\n    const n = parseInt(m[1], 10);\n    if (n >= 50 && n <= 2500) return n;\n  }\n  return 0;\n}\n\nfunction getAnnonceCC(a) {\n  // 1) champ numérique dédié (chez toi: text-body-1 (7))\n  const ccNum = extractCCFromText(getAnnonceCCNumRaw(a));\n  if (ccNum) return ccNum;\n\n  // 2) champ \"cc\" texte (text-body-1 (13)) si dispo\n  const ccTxt = extractCCFromText(getAnnonceCCTxtRaw(a));\n  if (ccTxt) return ccTxt;\n\n  // 3) fallback version / titre / description\n  const ccVer = extractCCFromText(getAnnonceVersionRaw(a));\n  if (ccVer) return ccVer;\n\n  const ccTitle = extractCCFromText(getAnnonceTitle(a));\n  if (ccTitle) return ccTitle;\n\n  const ccDesc = extractCCFromText(getAnnonceDescRaw(a));\n  if (ccDesc) return ccDesc;\n\n  return 0;\n}\n\n// =====================================================\n// 5) SEPARATION MODELES / ANNONCES\n// =====================================================\nconst modeles = [];\nconst annonces = [];\n\nfor (const obj of items) {\n  const isModele = getMarqueField(obj) && getModeleField(obj) && pick(obj, K.MODELE.CC) !== \"\";\n  const isAnnonce = pick(obj, K.ANNONCE.URL) !== \"\" || pick(obj, K.ANNONCE.TITLE) !== \"\" || obj?.relative !== undefined;\n\n  if (isModele) modeles.push(obj);\n  else if (isAnnonce) annonces.push(obj);\n}\n\n// Si aucun modèle => forcément aucun match\n// (Je ne throw pas pour éviter de casser le workflow)\nif (!modeles.length) {\n  return annonces.map(a => ({ json: { ...a, matched_score: 0, matched_quality: \"no_match\", reason_no_match: \"no_model_items_detected\" } }));\n}\n\n// =====================================================\n// 6) INDEX PAR MARQUE\n// =====================================================\nconst brandIndex = new Map();\n\nfor (const m of modeles) {\n  const brandRaw = getMarqueField(m);\n  const modelRaw = getModeleField(m);\n\n  const brand = normalize(brandRaw);\n  const modelName = normalize(modelRaw);\n  const modelTokens = tokenize(modelName);\n\n  if (!brand || !modelName || modelTokens.length === 0) continue;\n\n  const ys = parseInt(getYearStartField(m) || 0, 10) || 0;\n\n  let ye = getYearEndField(m);\n  ye = (ye === null || ye === undefined || ye === \"\") ? 9999 : (parseInt(ye, 10) || 9999);\n\n  const ccModel = Math.round(Number(pick(m, K.MODELE.CC) || 0)) || 0;\n\n  const prepared = {\n    raw: m,\n    brand,\n    modelName,\n    modelTokens,\n    yearStart: ys,\n    yearEnd: ye,\n    cc: ccModel,\n  };\n\n  if (!brandIndex.has(brand)) brandIndex.set(brand, []);\n  brandIndex.get(brand).push(prepared);\n}\n\nconst knownBrands = Array.from(brandIndex.keys()).sort((a, b) => b.length - a.length);\n\n// =====================================================\n// 7) MATCHING\n// =====================================================\nconst SCORE_THRESHOLD = 40;\nconst results = [];\n\nfor (const a of annonces) {\n  const url = getAnnonceUrl(a);\n\n  // ⚠️ On score sur un texte enrichi: version + marque + modèle + cc + description\n  const brandField = getAnnonceBrandRaw(a);\n  const modelField = getAnnonceModelRaw(a);\n  const versionField = getAnnonceVersionRaw(a);\n  const ccNumField = getAnnonceCCNumRaw(a);\n  const ccTxtField = getAnnonceCCTxtRaw(a);\n  const desc = getAnnonceDescRaw(a);\n  const yearField = pick(a, K.ANNONCE.YEAR) || \"\";\n\n  const titlePlus = `${versionField} ${brandField} ${modelField} ${ccNumField} ${ccTxtField} ${yearField} ${desc}`.trim();\n  const titleNorm = normalize(titlePlus);\n  const titleTokens = tokenize(titlePlus);\n\n  // marque: champ marque, sinon fallback scan knownBrands\n  let brandAnnonce = normalize(brandField);\n  if (!brandAnnonce) {\n    for (const b of knownBrands) {\n      if (titleNorm.includes(b)) { brandAnnonce = b; break; }\n    }\n  }\n\n  const annonceYear = pickAnnonceYear(a);\n  const annonceCC = getAnnonceCC(a);\n\n  // anti générique (mais on accepte si on a version/model/cc)\n  const hasDiscriminant = !!normalize(versionField) || !!normalize(modelField) || !!annonceCC;\n  const titleIsTooGeneric = titleTokens.length <= 3 && !hasDiscriminant;\n\n  if (titleIsTooGeneric) {\n    results.push({ json: buildOut(a, { url, annonceYear, annonceCC, match: null, score: 0, jacc: 0, usedYearFilter: false, reason: \"too_generic_no_discriminant\" }) });\n    continue;\n  }\n\n  if (!brandAnnonce || !brandIndex.has(brandAnnonce)) {\n    results.push({ json: buildOut(a, { url, annonceYear, annonceCC, match: null, score: 0, jacc: 0, usedYearFilter: false, reason: \"brand_not_found\" }) });\n    continue;\n  }\n\n  const baseCandidates = brandIndex.get(brandAnnonce);\n  const passes = [{ useYear: true }, { useYear: false }];\n\n  let bestPrepared = null;\n  let bestScore = 0;\n  let bestJ = 0;\n  let usedYearFilter = false;\n\n  for (const pass of passes) {\n    let foundInPass = false;\n\n    for (const pm of baseCandidates) {\n      if (pass.useYear && annonceYear) {\n        if (annonceYear < pm.yearStart || annonceYear > pm.yearEnd) continue;\n      }\n\n      // gate CC dur\n      if (annonceCC && pm.cc) {\n        const diffHard = Math.abs(pm.cc - annonceCC);\n        if (diffHard >= 80) continue;\n      }\n\n      let ccPenalty = 0;\n      if (annonceCC && pm.cc) {\n        const diff = Math.abs(pm.cc - annonceCC);\n        if (diff > 2 && diff <= 30) ccPenalty = 10;\n        else if (diff > 30) ccPenalty = 20;\n      }\n\n      let { score, jacc } = computeScoreModelOnly(titleNorm, titleTokens, pm);\n      score = Math.max(0, score - ccPenalty);\n\n      if (score > bestScore) {\n        bestScore = score;\n        bestPrepared = pm;\n        bestJ = jacc;\n        usedYearFilter = pass.useYear && !!annonceYear;\n        foundInPass = true;\n        if (bestScore >= 95) break;\n      }\n    }\n\n    if (pass.useYear && foundInPass) break;\n  }\n\n  const ok = bestScore >= SCORE_THRESHOLD;\n  const best = ok ? bestPrepared?.raw : null;\n\n  results.push({\n    json: buildOut(a, {\n      url,\n      annonceYear,\n      annonceCC,\n      match: best,\n      score: Math.round(bestScore),\n      jacc: Number(bestJ || 0).toFixed(2),\n      usedYearFilter,\n      reason: ok ? \"\" : \"below_threshold\"\n    })\n  });\n}\n\n// =====================================================\n// 8) OUTPUT: keep \"*\" keys, remove \"/\" keys\n// =====================================================\n// D'après ton exemple: les clés marquées \"/\" qu'on ne garde plus\nfunction stripUnwanted(obj) {\n  const UNWANTED_KEYS = new Set([\n    \"text-headline-1 href\",\n    \"text-body-1 href\",\n    \"text-body-1 (15)\",\n    \"text-body-1 href (5)\",\n    \"text-headline-1 href (2)\"\n  ]);\n\n  const out = {};\n  for (const k in (obj || {})) {\n    if (!UNWANTED_KEYS.has(k)) out[k] = obj[k];\n  }\n  return out;\n}\n\nfunction buildOut(a, ctx) {\n  const score = Number(ctx.score || 0);\n\n  let matchQuality = \"no_match\";\n  if (score >= 75) matchQuality = \"excellent\";\n  else if (score >= 55) matchQuality = \"good\";\n  else if (score >= SCORE_THRESHOLD) matchQuality = \"fair\";\n\n  const best = ctx.match;\n  const base = stripUnwanted(a);\n\n  return {\n    ...base,\n\n    // champs lisibles\n    annonce_url: ctx.url || \"\",\n    annonce_prix: pick(a, K.ANNONCE.PRICE) || \"\",\n    annonce_date_jour: pick(a, K.ANNONCE.DATE_DAY) || \"\",\n    annonce_date_heure: pick(a, K.ANNONCE.DATE_TIME) || \"\",\n\n    vendeur_nom: pick(a, K.ANNONCE.SELLER_NAME) || \"\",\n    vendeur_ville: pick(a, K.ANNONCE.SELLER_LOCATION) || \"\",\n    vendeur_membre_depuis: pick(a, K.ANNONCE.SELLER_SINCE) || \"\",\n    vendeur_derniere_activite: pick(a, K.ANNONCE.LAST_ACTIVITY) || \"\",\n\n    photo_1: pick(a, K.ANNONCE.PHOTO_1) || \"\",\n    photo_2: pick(a, K.ANNONCE.PHOTO_2) || \"\",\n    photo_3: pick(a, K.ANNONCE.PHOTO_3) || \"\",\n    nb_favoris: pick(a, K.ANNONCE.FAV_COUNT) || \"\",\n\n    vehicule_marque: pick(a, K.ANNONCE.BRAND) || \"\",\n    vehicule_modele: pick(a, K.ANNONCE.MODEL) || \"\",\n    vehicule_version: pick(a, K.ANNONCE.VERSION) || \"\",\n    vehicule_annee: pick(a, K.ANNONCE.YEAR) || \"\",\n    vehicule_km: pick(a, K.ANNONCE.KM) || \"\",\n    vehicule_cc: pick(a, K.ANNONCE.CC_NUM) || pick(a, K.ANNONCE.CC_TXT) || \"\",\n    annonce_description: pick(a, K.ANNONCE.DESC) || \"\",\n\n    annonce_year_resolved: ctx.annonceYear || \"\",\n    annonce_cc_resolved: ctx.annonceCC || \"\",\n    used_year_filter: !!ctx.usedYearFilter,\n\n    matched_marque: best ? (getMarqueField(best) || \"\") : \"\",\n    matched_modele: best ? (getModeleField(best) || \"\") : \"\",\n    matched_generations: best ? (pick(best, K.MODELE.GENERATION) || \"\") : \"\",\n    matched_coloris: best ? (pick(best, K.MODELE.COLORIS) || \"\") : \"\",\n    matched_annee_debut: best ? (pick(best, K.MODELE.YEAR_START) || \"\") : \"\",\n    matched_annee_fin: best ? (pick(best, K.MODELE.YEAR_END) || \"\") : \"\",\n\n    matched_score: score,\n    matched_quality: matchQuality,\n    matched_jaccard: String(ctx.jacc || \"0.00\"),\n    needs_review: !(score >= SCORE_THRESHOLD),\n    reason_no_match: ctx.reason || \"\",\n  };\n}\n\nreturn results;\n"
+      },
+      "id": "1bf32d55-26db-4815-9be8-db47e4591dc3",
+      "name": "1st Match",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        32,
+        240
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================\n// MATCHING v9.3.2 (BRAND KEY FIX) — LBC 2026 KEYS (u_moto_model + cubic_capacity)\n// Fix principal:\n// - Canonicalise la marque via brandKey() => \"CF MOTO\" == \"CFMOTO\"\n// - cleanModelFromHref2 retire la marque même si espaces/variantes\n// - Toujours return [{json:{...}}] (n8n OK)\n// ✅ MAJ KEYS 2026 (selon ton rename columns 1):\n// - Title: text-body-1 (8) (priorité) puis text-headline-1-expanded puis Nom_annonce/relative\n// - Desc: annonce_description (priorité) puis text-body-1 (16) puis text-body-1 (14) puis Description_complete\n// - Brand: text-body-1 (2) (priorité) puis Marque_scrap/annonce_brand_input\n// - Year: text-body-1 (4) puis text-body-1 (9) puis Annee_du_modele\n// - KM: text-body-1 (5) puis \"Kilomètrage\" / kilometrage\n// - CC: href cubic_capacity via text-body-1 href (5) (priorité) puis champ texte cc: text-body-1 (7)\n// - href marque: text-body-1 href (2)\n// - href modèle: text-body-1 href (3)\n// =====================================================\n\nconst allItems = $input.all().map(i => i.json);\n\n// -------------------------\n// GET / PICK\n// -------------------------\nconst get = (obj, ...keys) => {\n  for (const k of keys) {\n    const v = obj?.[k];\n    if (v !== undefined && v !== null && String(v).trim() !== \"\") return v;\n  }\n  return \"\";\n};\n\nconst pick = (obj, keys) => {\n  for (const k of keys) {\n    const v = obj?.[k];\n    if (v !== undefined && v !== null && String(v).trim() !== \"\") return v;\n  }\n  return \"\";\n};\n\n// -------------------------\n// Champs annonces (✅ NEW KEYS 2026 + compat)\n// -------------------------\nconst getAnnonceTitle = (a) =>\n  get(a,\n    \"text-body-1 (8)\",           // ✅ prioritaire (souvent = \"BMW R1200GS ...\")\n    \"text-headline-1-expanded\",\n    \"text-headline-1\",\n    \"Nom_annonce\",\n    \"annonce_title\",\n    \"relative\"\n  );\n\nconst getAnnonceDesc = (a) =>\n  get(a,\n    \"annonce_description\",       // ✅ ton champ propre (fix “1 seule desc”)\n    \"text-body-1 (16)\",          // ✅ nouvelle position description (si dispo)\n    \"text-body-1 (14)\",          // fallback ancien\n    \"Description_complete\",\n    \"description\",\n    \"annonce_desc\"\n  );\n\nconst getAnnonceUrl = (a) =>\n  get(a,\n    \"Url_Https\",\n    \"absolute href\",\n    \"annonce_url\",\n    \"relative\"\n  );\n\n// ✅ Brand: maintenant text-body-1 (2)\nconst getAnnonceBrand = (a) =>\n  get(a,\n    \"text-body-1 (2)\",\n    \"Marque_scrap\",\n    \"annonce_brand_input\"\n  );\n\n// année brute: (4) puis (9)\nconst getAnnonceYearRaw1 = (a) => get(a, \"text-body-1 (4)\", \"Annee_du_modele\", \"annonce_year_input_1\");\nconst getAnnonceYearRaw2 = (a) => get(a, \"text-body-1 (9)\", \"Mise_en_circulation\", \"annonce_year_input_2\");\n\n// ✅ CC via filtre LBC (le + fiable) : href(5)\nconst getAnnonceCCHref = (a) => get(a, \"text-body-1 href (5)\");\n\n// ✅ modèle via href(3)\nconst getAnnonceModelHref = (a) => get(a, \"text-body-1 href (3)\");\n\n// ✅ href marque LBC: href(2)\nconst getAnnonceBrandHref = (a) => get(a, \"text-body-1 href (2)\", \"text-body-1 href\");\n\n// km / seller / payment\nconst getAnnonceKmField  = (a) => get(a, \"text-body-1 (5)\", \"Kilomètrage\", \"kilometrage\", \"Nombre_de_kilometres\");\nconst getAnnonceSeller   = (a) => get(a, \"text-headline-1\", \"text-headline-1 (3)\", \"Nom_vendeur\", \"nom du vendeur pro\", \"seller_name\", \"Vendeur\");\nconst getAnnoncePayment  = (a) => get(a, \"Paiement_ou_SIREN\");\n\n// -------------------------\n// Champs modèles (référentiel)\n// -------------------------\nconst getModeleField = (m) => pick(m, [\"Modèle\",\"Modele\",\"modele\",\"Model\",\"MODELE\",\"Modèle \"]) || \"\";\nconst getMarqueField = (m) => pick(m, [\"Marque\",\"marque\",\"MARQUE\",\"Brand\",\"brand\"]) || \"\";\nconst getYearStartField = (m) => pick(m, [\"Année début\",\"Annee debut\",\"Année début \",\"Year start\",\"yearStart\"]) || \"\";\nconst getYearEndField   = (m) => pick(m, [\"Année fin\",\"Annee fin\",\"Année fin \",\"Year end\",\"yearEnd\"]) || \"\";\n\n// -------------------------\n// Normalisation / Tokenize\n// -------------------------\nconst STOP = new Set([\n  \"moto\",\"motos\",\"scooter\",\"roadster\",\"trail\",\"enduro\",\"cross\",\n  \"vend\",\"vente\",\"vends\",\"urgent\",\"etat\",\"tres\",\"super\",\"parfait\",\"excellent\",\n  \"paiement\",\"securise\",\"option\",\"full\",\"abs\",\"a2\",\"ct\",\"ok\",\n  \"km\",\"kms\",\"kilometrage\",\"kilometres\",\"boite\",\"vitesse\",\"manuelle\",\"automatique\",\n  \"prix\",\"euro\",\"eur\",\"garantie\",\"factures\",\"entretien\",\"revision\",\"controle\"\n]);\n\nfunction normalize(text) {\n  if (!text) return \"\";\n  let s = String(text)\n    .normalize(\"NFD\")\n    .replace(/[\\u0300-\\u036f]/g, \"\")\n    .toLowerCase();\n\n  s = s.replace(/_/g, \" \");\n  s = s.replace(/[/|]/g, \" \");\n  s = s.replace(/[^a-z0-9]+/g, \" \");\n  s = s.replace(/\\s+/g, \" \").trim();\n\n  s = s.replace(/\\b(mt)\\s*0?(\\d{2})\\b/g, \"$1$2\");\n  s = s.replace(/\\b(fz)\\s*(\\d)\\b/g, \"$1$2\");\n  s = s.replace(/\\b(gs)\\s*(\\d{3,4})\\b/g, \"$1$2\");\n  s = s.replace(/\\b(dl)\\s*(\\d{3,4})\\b/g, \"$1$2\");\n  s = s.replace(/\\b(v\\s*strom)\\b/g, \"vstrom\");\n  s = s.replace(/\\b(v[-\\s]?strom)\\b/g, \"vstrom\");\n  s = s.replace(/\\b(dr)\\s*z\\b/g, \"drz\");\n\n  return s;\n}\n\n// ✅ clé marque canonique : supprime espaces (CF MOTO == CFMOTO)\nfunction brandKey(brand) {\n  return normalize(brand).replace(/\\s+/g, \"\");\n}\n\nfunction splitAlphaNum(tok) {\n  const parts = String(tok).match(/[a-z]+|\\d+/g);\n  return parts && parts.length > 1 ? parts : [];\n}\n\nfunction tokenizeAny(text) {\n  const n = normalize(text);\n  if (!n) return [];\n  const raw = n.split(\" \").filter(Boolean);\n  const out = [];\n\n  for (const t0 of raw) {\n    out.push(t0);\n    const parts = splitAlphaNum(t0);\n    if (parts.length) out.push(...parts);\n  }\n\n  return out.filter(t => {\n    if (!t) return false;\n    if (STOP.has(t)) return false;\n    if (/^\\d+$/.test(t)) return true;\n    return t.length >= 2;\n  });\n}\n\n// ✅ modèle : garde token original + sous-parties (ex: \"r1m\" => r1m + r + 1 + m)\nfunction tokenizeModel(text) {\n  const n = normalize(text);\n  if (!n) return [];\n  const raw = n.split(\" \").filter(Boolean);\n  const out = [];\n\n  for (const t0 of raw) {\n    out.push(t0); // keep original\n    const parts = splitAlphaNum(t0);\n    if (parts.length) out.push(...parts);\n  }\n\n  return out.filter(t => {\n    if (!t) return false;\n    if (STOP.has(t)) return false;\n    if (/^\\d+$/.test(t)) return true;\n    return t.length >= 2;\n  });\n}\n\nconst tokensAlphaOnly = (tokens) => tokens.filter(t => /[a-z]/.test(t) && t.length >= 2);\n\n// -------------------------\n// Parsing année\n// -------------------------\nfunction parseYearMonth(s) {\n  const str = String(s || \"\").trim();\n  if (!str) return { year: 0, month: 0 };\n\n  const mmyyyy = str.match(/\\b(0?[1-9]|1[0-2])\\s*\\/\\s*((19|20)\\d{2})\\b/);\n  if (mmyyyy) return { month: parseInt(mmyyyy[1], 10), year: parseInt(mmyyyy[2], 10) };\n\n  const yyyy = str.match(/\\b(19|20)\\d{2}\\b/);\n  if (yyyy) return { month: 0, year: parseInt(yyyy[0], 10) };\n\n  return { year: 0, month: 0 };\n}\n\nfunction pickAnnonceYear(a, adText) {\n  const d2 = parseYearMonth(getAnnonceYearRaw2(a));\n  if (d2.year) return d2.year;\n\n  const d1 = parseYearMonth(getAnnonceYearRaw1(a));\n  if (d1.year) return d1.year;\n\n  const m = String(adText || \"\").match(/\\b(19|20)\\d{2}\\b/);\n  if (m) return parseInt(m[0], 10);\n\n  return 0;\n}\n\n// -------------------------\n// CC (✅ NEW KEYS 2026)\n// -------------------------\nfunction ccFromHref(href) {\n  const s = String(href || \"\");\n  const m = s.match(/cubic_capacity:(\\d{2,4})/i);\n  return m ? parseInt(m[1], 10) : 0;\n}\n\nfunction extractCCFromText(text) {\n  const raw = String(text || \"\");\n  if (!raw.trim()) return 0;\n\n  const noKm = raw.replace(/\\b(\\d{1,6})\\s*km\\b/gi, \" \");\n  const s = normalize(noKm);\n\n  let m = s.match(/\\b(\\d{2,4})\\s*(cc|cm3|cm 3|ccm)\\b/);\n  if (m) return parseInt(m[1], 10);\n\n  m = s.match(/\\b(\\d{2,4})(cc|cm3|ccm)\\b/);\n  if (m) return parseInt(m[1], 10);\n\n  // NEW: si on a juste \"1050\" (sans \"cc\"), on ne guess PAS ici\n  return 0;\n}\n\nfunction extractNumbers(text) {\n  const raw = String(text || \"\")\n    .replace(/\\b(\\d{1,6})\\s*km\\b/gi, \" \")\n    .replace(/\\b(0?[1-9]|1[0-2])\\s*\\/\\s*((19|20)\\d{2})\\b/g, \" \");\n  const s = normalize(raw);\n  return (s.match(/\\b\\d{3,4}\\b/g) || []).map(n => parseInt(n, 10));\n}\n\nfunction inferCCFromNumbers(adText, annonceYear) {\n  const nums = extractNumbers(adText);\n  const candidates = nums.filter(n => n >= 80 && n <= 2500 && (!annonceYear || n !== annonceYear));\n  if (!candidates.length) return 0;\n  return Math.max(...candidates);\n}\n\nfunction getAnnonceCC(a, adText, annonceYear) {\n  // 1) href cubic_capacity (priorité)\n  const ccH = ccFromHref(getAnnonceCCHref(a));\n  if (ccH) return ccH;\n\n  // 2) champ texte CC dédié (✅ text-body-1 (7) = \"1050\")\n  const ccTxt = get(a, \"text-body-1 (7)\", \"vehicule_cc_txt\", \"CC\", \"cc\");\n  if (ccTxt) {\n    // si purement numérique, on accepte direct (ex: \"1050\")\n    const n = String(ccTxt).replace(/[^\\d]/g, \"\");\n    if (n && n.length >= 2 && n.length <= 4) return parseInt(n, 10);\n\n    const ccField = extractCCFromText(ccTxt);\n    if (ccField) return ccField;\n  }\n\n  // 3) texte global\n  const ccT = extractCCFromText(adText);\n  if (ccT) return ccT;\n\n  // 4) dernier recours\n  const ccN = inferCCFromNumbers(adText, annonceYear || 0);\n  if (ccN) return ccN;\n\n  return 0;\n}\n\n// -------------------------\n// u_moto_brand / u_moto_model depuis href\n// -------------------------\nfunction decodePlus(s) { return String(s || \"\").replace(/\\+/g, \" \"); }\n\nfunction extractBrandFromHref(href) {\n  const h = String(href || \"\");\n  if (!h) return \"\";\n  const m = h.match(/u_moto_brand:([^+&]+)/i);\n  if (!m) return \"\";\n  try { return decodeURIComponent(decodePlus(m[1])); }\n  catch (e) { return decodePlus(m[1]); }\n}\n\nfunction extractModelFromHref2(href2) {\n  const h = String(href2 || \"\");\n  if (!h) return \"\";\n  const m = h.match(/u_moto_model:([^+&]+)/i);\n  if (!m) return \"\";\n  try { return decodeURIComponent(decodePlus(m[1])); }\n  catch (e) { return decodePlus(m[1]); }\n}\n\nfunction prettyBrand(raw) {\n  const s = String(raw || \"\").trim();\n  if (!s) return \"\";\n  if (s === s.toUpperCase()) return s;\n  return s\n    .toLowerCase()\n    .split(/\\s+/)\n    .map(w => w.charAt(0).toUpperCase() + w.slice(1))\n    .join(\" \");\n}\n\nfunction resolveBrandForOutput(a, hrefBrand) {\n  const rawHref = extractBrandFromHref(hrefBrand);\n  const rawField = getAnnonceBrand(a);\n  return prettyBrand(rawHref || rawField);\n}\n\nfunction cleanModelFromHref2(modelStr, brandRawOrNorm) {\n  if (!modelStr) return \"\";\n  const original = String(modelStr).replace(/_/g, \" \").trim();\n  const n = normalize(original);\n\n  if (n === \"autre\" || n.endsWith(\" autre\") || n.includes(\" autre \")) return \"\";\n\n  if (brandRawOrNorm) {\n    const bk = brandKey(brandRawOrNorm);\n    const origTokens = original.split(/\\s+/);\n\n    for (let take = Math.min(4, origTokens.length); take >= 1; take--) {\n      const head = origTokens.slice(0, take).join(\" \");\n      if (brandKey(head) === bk) {\n        return origTokens.slice(take).join(\" \").trim();\n      }\n    }\n  }\n\n  return original;\n}\n\nfunction isHref2Autre(href2) {\n  const raw = extractModelFromHref2(href2);\n  const n = normalize(raw);\n  return !raw || n === \"autre\" || n.endsWith(\" autre\") || n.includes(\" autre \");\n}\n\nfunction extractModelHintFromTitle(title, brandRawOrNorm) {\n  const t = String(title || \"\").trim();\n  if (!t) return \"\";\n\n  let s = t;\n\n  // retire marque si au début\n  if (brandRawOrNorm) {\n    const bk = brandKey(brandRawOrNorm);\n    const toks = s.split(/\\s+/);\n    for (let take = Math.min(4, toks.length); take >= 1; take--) {\n      const head = toks.slice(0, take).join(\" \");\n      if (brandKey(head) === bk) {\n        s = toks.slice(take).join(\" \").trim();\n        break;\n      }\n    }\n  }\n\n  s = s.replace(/\\b(neuf|neuve|garantie|disponible|stock|espace|motos|moto|ans|km)\\b/gi, \" \");\n\n  const toksAll = tokenizeModel(s);\n\n  // ✅ retirer la marque partout (pas seulement en tête)\n  let toks = toksAll;\n  if (brandRawOrNorm) {\n    const bk = brandKey(brandRawOrNorm);\n    toks = toksAll.filter(tk => brandKey(tk) !== bk);\n  }\n\n  const keep = [];\n  for (const t0 of toks) {\n    if (/^(19|20)\\d{2}$/.test(t0)) continue;\n    keep.push(t0);\n    if (keep.length >= 4) break;\n  }\n  return keep.length ? keep.join(\" \") : \"\";\n}\n\n// -------------------------\n// Similarités\n// -------------------------\nfunction jaccard(aTokens, bTokens) {\n  if (!aTokens.length || !bTokens.length) return 0;\n  const A = new Set(aTokens);\n  const B = new Set(bTokens);\n  let inter = 0;\n  for (const x of A) if (B.has(x)) inter++;\n  const union = A.size + B.size - inter;\n  return union ? inter / union : 0;\n}\n\nfunction coverageSet(adSet, modelTokens) {\n  if (!modelTokens.length) return 0;\n  let hit = 0;\n  for (const t of modelTokens) if (adSet.has(t)) hit++;\n  return hit / modelTokens.length;\n}\n\nfunction getModelDominantTokens(modelRaw) {\n  const n = normalize(modelRaw);\n  const nums = n.match(/\\b\\d{3,4}\\b/g) || [];\n  if (nums.length) return nums.map(Number);\n  const toks = tokenizeAny(modelRaw);\n  return toks.filter(t => /\\d/.test(t) || t.length >= 4);\n}\n\nfunction modelVariants(modelRaw) {\n  const cleaned = String(modelRaw || \"\").replace(/[|]/g, \"/\");\n  const parts = cleaned.split(\"/\").map(p => p.trim()).filter(Boolean);\n  return Array.from(new Set(parts.map(p => normalize(p)).filter(Boolean)));\n}\n\n// -------------------------\n// Seller flags\n// -------------------------\nfunction parseKmFromField(s) {\n  const str = String(s || \"\");\n  const m = str.replace(/\\u202f/g, \" \").replace(/\\s/g, \"\").match(/(\\d{1,6})km/i);\n  return m ? parseInt(m[1], 10) : 0;\n}\n\nfunction detectSellerFlags(a, adText) {\n  const sellerName = String(getAnnonceSeller(a) || \"\").trim();\n  const payment = String(getAnnoncePayment(a) || \"\").trim();\n  const km = parseKmFromField(getAnnonceKmField(a));\n  const blob = `${sellerName} ${payment} ${adText}`;\n\n  const proSignals = /\\b(siret|siren|tva|rcs|immatricul|professionnel|vendeur\\s*pro|concession\\b|concessionnaire|garage|showroom|reprise|financement|leasing|cr[eé]dit)\\b/i;\n  const proFalseContext = /\\b(entretenu(e)?|revision|r[eé]vis[eé])\\s+(chez|en)\\s+(le|la)\\s+(concessionnaire|garage)\\b/i;\n  const companySignals = /\\b(sarl|sas|eurl|auto-entrepreneur|entreprise|moto(s)?\\s*occ|occasion(s)?|motors|autos?)\\b/i;\n\n  let isPro = false;\n  if (sellerName) isPro = companySignals.test(sellerName) || /\\b(siret|siren)\\b/i.test(blob);\n  if (!isPro && proSignals.test(blob) && !proFalseContext.test(blob)) isPro = true;\n\n  const newTrue = /\\b(0\\s*km|0\\s*kms|jamais\\s+immatricul[eé]e?|moto\\s+neuve|vehicule\\s+neuf|neuf\\s+jamais\\s+roul[eé])\\b/i;\n  const newFalseParts = /\\b(batterie|pneu(x)?|plaquette(s)?|kit\\s*chaine|chaine|disque(s)?|huile|vidange|filtre)\\s+neuf(s|ve|ves)?\\b/i;\n\n  let isNew = newTrue.test(adText);\n  if (!isNew && /\\b(neuf|neuve)\\b/i.test(adText) && !newFalseParts.test(adText)) isNew = false;\n\n  return { sellerName, km, isPro, isNew };\n}\n\n// -------------------------\n// Out of scope (ne SKIP pas si modelHint valide)\n// -------------------------\nfunction isNonMotoListing(a, adTextUsed, modelHintClean) {\n  const typeField = normalize(get(a, \"text-body-1 (10)\", \"Type_vehicule\", \"type\", \"vehicle_type\"));\n\n  if (modelHintClean && String(modelHintClean).trim() !== \"\") return { skip: false, reason: \"\" };\n\n  if (typeField && typeField !== \"moto\") return { skip: true, reason: `type_not_moto:${typeField}` };\n\n  const title = normalize(getAnnonceTitle(a));\n  const desc  = normalize(getAnnonceDesc(a));\n  const blob  = `${title} ${desc} ${normalize(adTextUsed)}`;\n\n  const reNonMoto = /\\b(trottinette|edpm|nami|dualtron|kaabo|weped|speedway|monoroue|gyropode|hoverboard)\\b/i;\n  const reParts   = /\\b(piece|pieces|accessoire|accessoires|casque|gants|blouson|bottes|pneu|pneus|jante|echappement|ligne|silencieux)\\b/i;\n\n  if (reNonMoto.test(blob)) return { skip: true, reason: \"non_moto_vehicle\" };\n  if (reParts.test(blob))   return { skip: true, reason: \"parts_or_accessories\" };\n\n  return { skip: false, reason: \"\" };\n}\n\n// -------------------------\n// Split modèles / annonces\n// -------------------------\nconst modeles = [];\nconst annonces = [];\n\nfor (const item of allItems) {\n  const isModele = !!getMarqueField(item) && !!getModeleField(item) &&\n    (get(item, \"Cylindrée (cc)\", \"Type (M/S/E)\", \"Type(M/S/E)\", \"Type (M\\\\/S\\\\/E)\") !== \"\");\n\n  const isAnnonce = get(item, \"text-body-1 (8)\", \"text-headline-1-expanded\", \"relative\", \"Url_Https\", \"absolute href\", \"annonce_url\") !== \"\";\n\n  if (isModele) modeles.push(item);\n  else if (isAnnonce) annonces.push(item);\n}\n\nif (!modeles.length) {\n  return annonces.map(a => ({ json: { ...a, matching_engine: \"NO_MODELS_INPUT\", matched_score: 0, needs_review: true } }));\n}\n\n// -------------------------\n// Index marques (sur brandKey)\n// -------------------------\nconst brandIndex = new Map();\n\nfor (const m of modeles) {\n  const brandRaw = getMarqueField(m);\n  const modelRaw = getModeleField(m);\n\n  const bKey = brandKey(brandRaw);\n  if (!bKey) continue;\n\n  const variants = modelVariants(modelRaw);\n  if (!variants.length) continue;\n\n  const ys = parseInt(getYearStartField(m) || 0, 10) || 0;\n  let ye = getYearEndField(m);\n  ye = (ye === null || ye === undefined || ye === \"\") ? 9999 : (parseInt(ye, 10) || 9999);\n\n  const cc = Math.round(Number(get(m, \"Cylindrée (cc)\") || 0)) || 0;\n\n  // ✅ IMPORTANT: tokenizeModel + tokensAlphaOnly (>=2 lettres)\n  const variantAlphaTokens = variants\n    .map(v => tokensAlphaOnly(tokenizeModel(v)))\n    .filter(t => t.length);\n\n  if (!variantAlphaTokens.length) continue;\n\n  const doms = getModelDominantTokens(modelRaw);\n  const modelNoSpace = normalize(modelRaw).replace(/\\s+/g, \"\");\n\n  const prepared = {\n    raw: m,\n    brandRaw,\n    bKey,\n    ys,\n    ye,\n    cc,\n    variants,\n    variantAlphaTokens,\n    combinedTok: tokenizeAny(`${brandRaw} ${modelRaw}`),\n    dominants: doms,\n    modelNoSpace\n  };\n\n  if (!brandIndex.has(bKey)) brandIndex.set(bKey, []);\n  brandIndex.get(bKey).push(prepared);\n}\n\nconst knownBrandKeys = Array.from(brandIndex.keys()).sort((a, b) => b.length - a.length);\n\n// -------------------------\n// Seuils (-10%) + CC hard gate\n// -------------------------\nconst MIN_COV_ALPHA = 0.54;\nconst MIN_ACCEPT    = 0.648;\nconst CC_BLOCK_DIFF = 315;\nconst CC_PENALTY    = 0.072;\n\nconst CC_HARD_GATE  = 75; // ✅ demandé\n\nfunction computeScore(adTok, adSet, p) {\n  let bestCov = 0;\n  for (const vat of p.variantAlphaTokens) {\n    const cov = coverageSet(adSet, vat);\n    if (cov > bestCov) bestCov = cov;\n  }\n  const jac = jaccard(adTok, p.combinedTok);\n  const score = (0.88 * bestCov) + (0.12 * jac);\n  return { score, bestCov, jac };\n}\n\n// ✅ rescue quand le modelHint contient clairement le modèle\nfunction hintRescue(modelHint, p) {\n  if (!modelHint) return false;\n  const hNorm = normalize(modelHint);\n  if (!hNorm) return false;\n\n  const hNoSpace = hNorm.replace(/\\s+/g, \"\");\n  const mNoSpace = (p.modelNoSpace || \"\").replace(/\\s+/g, \"\");\n\n  if (mNoSpace && hNoSpace.includes(mNoSpace)) return true;\n\n  if (p.variants && p.variants.length) {\n    for (const v of p.variants) {\n      const vNorm = normalize(v);\n      if (vNorm && hNorm.includes(vNorm)) return true;\n    }\n  }\n\n  const hTok = new Set(tokensAlphaOnly(tokenizeAny(modelHint)));\n  if (p.variantAlphaTokens && p.variantAlphaTokens.length) {\n    for (const vat of p.variantAlphaTokens) {\n      let hit = 0;\n      for (const t of vat) if (hTok.has(t)) hit++;\n      if (hit >= 1) return true;\n    }\n  }\n\n  return false;\n}\n\n// -------------------------\n// MATCHING\n// -------------------------\nconst results = [];\n\nfor (const a of annonces) {\n  const title = getAnnonceTitle(a);\n  const desc  = getAnnonceDesc(a);\n  const url   = getAnnonceUrl(a);\n\n  // ✅ NEW hrefs\n  const href2 = getAnnonceModelHref(a) || \"\"; // text-body-1 href (3)\n  const href4 = getAnnonceCCHref(a) || \"\";    // text-body-1 href (5)\n\n  const hrefBrand = getAnnonceBrandHref(a) || \"\";\n  const brandOut  = resolveBrandForOutput(a, hrefBrand);\n\n  const brandFromHrefRaw = extractBrandFromHref(hrefBrand);\n  const brandFromHrefKey = brandKey(brandFromHrefRaw);\n\n  const brandFromFieldRaw = getAnnonceBrand(a);\n  const brandFromFieldKey = brandKey(brandFromFieldRaw);\n\n  const ccTxtField = get(a, \"text-body-1 (7)\", \"vehicule_cc_txt\", \"CC\", \"cc\");\n\n  const adTextBase = `${title} ${desc} ${ccTxtField} ${href4}`.trim();\n  const adNormBase = normalize(adTextBase);\n\n  let brandAnnonceKey = brandFromHrefKey || brandFromFieldKey;\n\n  if (!brandAnnonceKey) {\n    const blobKey = brandKey(adNormBase);\n    for (const bk of knownBrandKeys) {\n      if (blobKey.includes(bk)) { brandAnnonceKey = bk; break; }\n    }\n  }\n\n  const rawModelFromHref2 = extractModelFromHref2(href2);\n\n  let modelHint = cleanModelFromHref2(\n    rawModelFromHref2,\n    brandFromHrefRaw || brandFromFieldRaw\n  );\n\n  const titleHint = extractModelHintFromTitle(\n    title,\n    brandFromHrefRaw || brandFromFieldRaw\n  );\n\n  const hintHasDigits = (s) => /\\b\\d{2,4}\\b/.test(normalize(s));\n  const hintTokenCount = (s) => tokenizeModel(s).length;\n\n  const modelHintGeneric =\n    !modelHint ||\n    (!hintHasDigits(modelHint) && hintTokenCount(modelHint) <= 1);\n\n  if (modelHintGeneric && titleHint) {\n    const titleBetter = hintHasDigits(titleHint) || hintTokenCount(titleHint) >= 2;\n    if (titleBetter) modelHint = titleHint;\n  }\n\n  if (!modelHint && isHref2Autre(href2)) {\n    modelHint = titleHint;\n  }\n\n  const matchedModeleFallback = modelHint ? String(modelHint).trim() : \"\";\n  const adTextUsed = modelHint ? `${adTextBase} ${modelHint}`.trim() : adTextBase;\n\n  const annonceYear = pickAnnonceYear(a, adTextUsed);\n  const annonceCC   = getAnnonceCC(a, adTextUsed, annonceYear);\n  const sellerFlags = detectSellerFlags(a, adTextUsed);\n\n  const nonMoto = isNonMotoListing(a, adTextUsed, modelHint);\n  if (nonMoto.skip) {\n    results.push({\n      json: {\n        ...a,\n        annonce_title: title,\n        annonce_url: url,\n        annonce_year_resolved: annonceYear || \"\",\n        annonce_cc_resolved: annonceCC || \"\",\n        cc_source_href: ccFromHref(href4) || \"\",\n        seller_is_pro: sellerFlags.isPro,\n        seller_is_new: sellerFlags.isNew,\n\n        matched_ok: false,\n        matched_quality: \"no_match\",\n        matched_marque: brandOut || \"\",\n        matched_modele: matchedModeleFallback,\n        matched_generations: \"\",\n        matched_coloris: \"\",\n        matched_annee_debut: \"\",\n        matched_annee_fin: \"\",\n        matched_cylindree: \"\",\n        matched_score: 0,\n\n        matching_engine: \"SKIP_OUT_OF_SCOPE\",\n        needs_review: false,\n        reason_no_match: nonMoto.reason,\n        _match_debug: {\n          detectedBrand: normalize(brandFromHrefRaw || brandFromFieldRaw) || null,\n          brandFromHref: normalize(brandFromHrefRaw) || null,\n          hrefBrand: hrefBrand || null,\n          href2,\n          modelHint\n        }\n      }\n    });\n    continue;\n  }\n\n  if (!brandAnnonceKey || !brandIndex.has(brandAnnonceKey)) {\n    results.push({\n      json: {\n        ...a,\n        annonce_title: title,\n        annonce_url: url,\n        annonce_year_resolved: annonceYear || \"\",\n        annonce_cc_resolved: annonceCC || \"\",\n        cc_source_href: ccFromHref(href4) || \"\",\n        seller_is_pro: sellerFlags.isPro,\n        seller_is_new: sellerFlags.isNew,\n\n        matched_ok: false,\n        matched_quality: \"no_match\",\n        matched_marque: \"\",\n        matched_modele: matchedModeleFallback,\n        matched_generations: \"\",\n        matched_coloris: \"\",\n        matched_annee_debut: \"\",\n        matched_annee_fin: \"\",\n        matched_cylindree: \"\",\n        matched_score: 0,\n\n        matching_engine: \"NO_MATCH\",\n        needs_review: true,\n        reason_no_match: \"brand_not_in_ref\",\n        _match_debug: {\n          detectedBrand: normalize(brandFromHrefRaw || brandFromFieldRaw) || null,\n          brandFromHref: normalize(brandFromHrefRaw) || null,\n          hrefBrand: hrefBrand || null,\n          brandAnnonceKey,\n          href2,\n          modelHint,\n          adTextPreview: adTextUsed.slice(0, 250),\n        }\n      }\n    });\n    continue;\n  }\n\n  const adTok = tokenizeAny(adTextUsed);\n  const adSet = new Set(adTok);\n  const adNumbers = extractNumbers(adTextUsed);\n\n  let baseCandidates = brandIndex.get(brandAnnonceKey) || [];\n\n  if (annonceCC) {\n    const filtered = baseCandidates.filter(p => !p.cc || Math.abs(p.cc - annonceCC) <= CC_BLOCK_DIFF);\n    if (filtered.length >= 3) baseCandidates = filtered;\n  }\n\n  const passes = [{ useYear: true }, { useYear: false }];\n\n  let bestPrepared = null;\n  let bestScore = 0;\n  let bestCov = 0;\n  let bestJac = 0;\n  let usedYearFilter = false;\n  let ccPenaltyApplied = false;\n  let dominantGateRejectedCount = 0;\n\n  let ccHardGateRejectedCount = 0;\n\n  for (const pass of passes) {\n    let foundInPass = false;\n\n    for (const p of baseCandidates) {\n      if (pass.useYear && annonceYear) {\n        if (annonceYear < p.ys || annonceYear > p.ye) continue;\n      }\n\n      const hasHint = !!(modelHint && String(modelHint).trim());\n      const hasHref2Model = !!(rawModelFromHref2 && String(rawModelFromHref2).trim());\n      const relaxDominantGate = hasHint || hasHref2Model;\n\n      let hintBypass = false;\n\n      if (hasHint) {\n        const modelNoSpace = p.modelNoSpace || \"\";\n        const hintNoSpace = normalize(modelHint).replace(/\\s+/g, \"\");\n        if (modelNoSpace && hintNoSpace.includes(modelNoSpace)) hintBypass = true;\n\n        if (!hintBypass && p.dominants && p.dominants.length) {\n          const hintTok = new Set(tokenizeAny(modelHint));\n          for (const d of p.dominants) {\n            if (typeof d === \"number\") {\n              if (adNumbers.includes(d)) { hintBypass = true; break; }\n            } else {\n              if (hintTok.has(String(d))) { hintBypass = true; break; }\n            }\n          }\n        }\n      }\n\n      if (!relaxDominantGate && !hintBypass && p.dominants && p.dominants.length) {\n        let dominantHit = false;\n        for (const d of p.dominants) {\n          if (typeof d === \"number\") {\n            if (adNumbers.includes(d)) { dominantHit = true; break; }\n          } else {\n            if (adSet.has(String(d))) { dominantHit = true; break; }\n          }\n        }\n        if (!dominantHit) { dominantGateRejectedCount++; continue; }\n      }\n\n      let { score, bestCov: covA, jac } = computeScore(adTok, adSet, p);\n\n      const canRescue = hintRescue(modelHint, p);\n      if (covA < MIN_COV_ALPHA) {\n        if (!canRescue) continue;\n        covA = MIN_COV_ALPHA;\n        score = Math.max(score, MIN_ACCEPT - 0.01);\n      }\n\n      let finalScore = score;\n\n      if (annonceCC && p.cc) {\n        const diff = Math.abs(p.cc - annonceCC);\n\n        // ✅ CC hard gate\n        if (diff >= CC_HARD_GATE) { ccHardGateRejectedCount++; continue; }\n\n        if (diff >= CC_BLOCK_DIFF) continue;\n        if (diff > 50) { finalScore = Math.max(0, finalScore - CC_PENALTY); ccPenaltyApplied = true; }\n      }\n\n      if (finalScore > bestScore) {\n        bestScore = finalScore;\n        bestPrepared = p;\n        bestCov = covA;\n        bestJac = jac;\n        usedYearFilter = pass.useYear && !!annonceYear;\n        foundInPass = true;\n      }\n    }\n\n    if (pass.useYear && foundInPass) break;\n  }\n\n  const accept = !!bestPrepared && bestScore >= MIN_ACCEPT;\n  const best = accept ? bestPrepared.raw : null;\n\n  results.push({\n    json: {\n      ...a,\n      annonce_title: title,\n      annonce_url: url,\n      annonce_year_resolved: annonceYear || \"\",\n      used_year_filter: usedYearFilter,\n      annonce_cc_resolved: annonceCC || \"\",\n      cc_source_href: ccFromHref(href4) || \"\",\n      seller_is_pro: sellerFlags.isPro,\n      seller_is_new: sellerFlags.isNew,\n\n      matched_ok: accept,\n      matched_quality: accept ? \"auto_match\" : \"no_match\",\n\n      matched_marque: accept ? (getMarqueField(best) || \"\") : (brandOut || \"\"),\n      matched_modele: accept ? (getModeleField(best) || \"\") : matchedModeleFallback,\n      matched_generations: accept ? (get(best, \"Spéc/Génération\", \"Spec/Generation\") || \"\") : \"\",\n      matched_coloris: accept ? (get(best, \"Coloris commercial\") || \"\") : \"\",\n      matched_annee_debut: accept ? (get(best, \"Année début\") || getYearStartField(best) || \"\") : \"\",\n      matched_annee_fin: accept ? (get(best, \"Année fin\") || getYearEndField(best) || \"\") : \"\",\n      matched_cylindree: accept ? (get(best, \"Cylindrée (cc)\") || \"\") : \"\",\n\n      matched_score: accept ? Number(bestScore.toFixed(3)) : 0,\n      matched_jaccard: Number(bestJac.toFixed(3)),\n      matching_engine: accept ? \"AUTO_V9_3_2_BRANDKEY_LBC2026\" : \"NO_MATCH\",\n      needs_review: !accept,\n      reason_no_match: accept ? \"\" : \"below_threshold_or_no_candidate_after_gates\",\n\n      _match_debug: {\n        detectedBrand: normalize(brandFromHrefRaw || brandFromFieldRaw) || null,\n        brandFromHref: normalize(brandFromHrefRaw) || null,\n        hrefBrand: hrefBrand || null,\n        brandAnnonceKey,\n        adTextPreview: adTextUsed.slice(0, 250),\n        href2,\n        modelHint,\n        adNumbers,\n        dominantGateRejectedCount,\n\n        ccHardGate: CC_HARD_GATE,\n        ccHardGateRejectedCount,\n\n        covAlphaBest: Number(bestCov.toFixed(3)),\n        jacBest: Number(bestJac.toFixed(3)),\n        minCovAlpha: MIN_COV_ALPHA,\n        minAccept: MIN_ACCEPT,\n        ccPenaltyApplied,\n        ccResolved: annonceCC || 0,\n        adTokensCount: adTok.length,\n      }\n    }\n  });\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32,
+        1072
+      ],
+      "id": "2ed448b1-d191-4273-a542-9f92ededa772",
+      "name": "5th match - new modele"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ===============================\n// HELPERS\n// ===============================\nconst CURRENT_YEAR = 2026;\n\nfunction extractFavoris(value) {\n  if (!value) return 0;\n  const m = String(value).match(/(\\d+)\\s*$/); // prend le dernier nombre\n  return m ? parseInt(m[1], 10) : 0;\n}\nfunction extractCC(value) {\n  if (!value) return \"\";\n\n  const m = String(value).match(/(\\d{2,4}(\\.\\d+)?)/);\n  if (!m) return \"\";\n\n  const cc = parseFloat(m[1]);\n\n  // ❌ si inférieur à 49.8 → ne rien afficher\n  if (cc < 49.8) return \"\";\n\n  return cc;\n}\n\n\nfunction extractNbPhotos(value) {\n  if (!value) return 0;\n\n  const s = String(value);\n\n  // ex: \"Voir les 5 photos\" / \"Voir les photos\" / \"Voir 12 photos\"\n  const m = s.match(/(\\d+)/);\n  return m ? parseInt(m[1], 10) : 0;\n}\n\n/**\n * Parse matched_generations:\n * Exemples possibles:\n * - \"SMCR (Gen2) 2021–2024\"\n * - \"SMCR (Gen2) 2021→\"\n * - \"(LC) 2018-2020\"\n * - \"2021→\"\n */\nfunction parseGenerations(value) {\n  const s = String(value || \"\").trim();\n  if (!s) return { label: \"\", yStart: \"\", yEnd: \"\" };\n\n  // label = contenu entre parenthèses\n  const labelMatch = s.match(/\\(([^)]+)\\)/);\n  const label = labelMatch ? labelMatch[1].trim() : \"\";\n\n  // Range \"2002–2003\" ou \"2002-2003\"\n  const rangeMatch = s.match(/(\\d{4})\\s*[-–]\\s*(\\d{4})/);\n  if (rangeMatch) {\n    return { label, yStart: Number(rangeMatch[1]), yEnd: Number(rangeMatch[2]) };\n  }\n\n  // Arrow \"2018→\" => fin = année courante\n  const arrowMatch = s.match(/(\\d{4})\\s*→/);\n  if (arrowMatch) {\n    return { label, yStart: Number(arrowMatch[1]), yEnd: CURRENT_YEAR };\n  }\n\n  // Fallback: une seule année\n  const oneYear = s.match(/(\\d{4})/);\n  if (oneYear) {\n    const y = Number(oneYear[1]);\n    return { label, yStart: y, yEnd: y };\n  }\n\n  return { label: \"\", yStart: \"\", yEnd: \"\" };\n}\n\n// ===============================\n// MAPPING\n// ===============================\nfunction mapField(item) {\n  const gen = parseGenerations(item.matched_generations);\n\n  return {\n    json: {\n      // ===============================\n      // IDENTITÉ ANNONCE\n      // ===============================\n      Nom_annonce: item[\"text-headline-1-expanded\"] || item.annonce_title || \"\",\n      Url_Https: item[\"absolute href\"] || item.annonce_url || \"\",\n\n      // ✅ Favoris (chiffre uniquement)\n      \"personnes ont déjà ajouté cette annonce en favori\": extractFavoris(item[\"u-shadow-border-transition\"]),\n      \n\"nombre de photos supplémentaires\": extractNbPhotos(item[\"u-shadow-border-transition (2)\"]),\n\n      // ===============================\n      // DATE / HEURE\n      // ===============================\n      \"Date de mise en publication\": item[\"text-caption\"] || \"\",\n      \"Heure de mise en publication\": item[\"text-caption (2)\"] || \"\",\n\n      // ===============================\n      // PRIX\n      // ===============================\n      Prix_affiche: item[\"flex\"] || item[\"text-headline-1\"] || \"\",\n\n      // ===============================\n      // ✅ PHOTOS (3 clés récupérées)\n      // ===============================\n      Photo_1: item[\"size-full src\"] || \"\",\n      Photo_2: item[\"size-full src (2)\"] || \"\",\n      Photo_3: item[\"size-full src (3)\"] || \"\",\n\n          // ===============================\n    // VEHICULE / VENDEUR (RENOMMÉ)\n    // ===============================\n    \"nom du vendeur pro\": item[\"text-body-1\"] || \"\",\n    \n    \"année du modèle\": item[\"text-body-1 (4)\"] || \"\",\n    \n    \"Kilométrage\": item[\"text-body-1 (5)\"] || \"\",\n    \n    Mise_en_circulation: item[\"text-body-1 (6)\"] || \"\",\nCylindree_cc: extractCC(item[\"text-body-1 (7)\"]),\n\n      // ===============================\n      // ✅ DESCRIPTION COMPLÈTE\n      // ===============================\n\"Description de l'annonce\": item.annonce_description || \"\",\n\n      // ===============================\n      // STATUT / VENDEUR\n      // ===============================\n      Statut_annonce: item[\"box-border\"] || \"\",\n\n      // ✅ 3 clés récupérées côté vendeur\n      Nom_vendeur: item[\"text-headline-1 (2)\"] || \"\",\n      \"nombre d’avis\": item[\"text-body-2\"] || \"\",\n      \"Dernière activité\": item[\"text-body-2 (2)\"] || \"\",\n\n      // (tu peux garder ces noms internes si tu en as encore besoin ailleurs)\n      Paiement_ou_SIREN: item[\"text-body-2\"] || \"\",\n      Infos_vendeur: item[\"text-body-2 (2)\"] || \"\",\n\n      // ===============================\n      // MATCHING\n      // ===============================\n      matched_marque: item.matched_marque || \"\",\n      matched_modele: item.matched_modele || \"\",\n      matched_generations: item.matched_generations || \"\",\n\n      generation_label: gen.label || \"\",\n      generation_year_start: gen.yStart || \"\",\n      generation_year_end: gen.yEnd || \"\",\n\n      matched_score: item.matched_score || \"\",\n      matched_quality: item.matched_quality || \"\",\n      needs_review: item.needs_review ?? false,\n    }\n  };\n}\n\n// ===============================\n// RUN\n// ===============================\nreturn $input.all().map(i => mapField(i.json));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        848
+      ],
+      "id": "cf3f4fe0-a9fa-447d-b982-d5ccf3febc01",
+      "name": "Rename Columns 4.0"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =====================================================\n// MATCHING v9.3.2 (BRAND KEY FIX) — LBC 2026 KEYS (u_moto_model + cubic_capacity)\n// Fix principal:\n// - Canonicalise la marque via brandKey() => \"CF MOTO\" == \"CFMOTO\"\n// - cleanModelFromHref2 retire la marque même si espaces/variantes\n// - Toujours return [{json:{...}}] (n8n OK)\n// ✅ MAJ KEYS 2026 :\n// - Brand: text-body-1 (2) + href marque: text-body-1 href (2) + href modèle: text-body-1 href (3)\n// - Title: text-body-1 (8) puis text-headline-1-expanded puis relative/Nom_annonce\n// - Desc: annonce_description (ton node matching récent) puis text-body-1 (16) puis text-body-1 (14) puis Description_complete\n// - Year: text-body-1 (4) puis text-body-1 (9) puis Annee_du_modele\n// - CC: href cubic_capacity via text-body-1 href (5) (le + fiable), sinon champ texte cc: text-body-1 (7)\n// - KM: text-body-1 (5) ou \"Kilomètrage\"\n// - Seller: text-headline-1 / text-headline-1 (3) (ex: Jeremy21) + éventuellement \"nom du vendeur pro\"\n// =====================================================\n\nconst allItems = $input.all().map(i => i.json);\n\n// -------------------------\n// GET / PICK\n// -------------------------\nconst get = (obj, ...keys) => {\n  for (const k of keys) {\n    const v = obj?.[k];\n    if (v !== undefined && v !== null && String(v).trim() !== \"\") return v;\n  }\n  return \"\";\n};\n\nconst pick = (obj, keys) => {\n  for (const k of keys) {\n    const v = obj?.[k];\n    if (v !== undefined && v !== null && String(v).trim() !== \"\") return v;\n  }\n  return \"\";\n};\n\n// -------------------------\n// Champs annonces (✅ NEW KEYS 2026 + compat RenameColumns1)\n// -------------------------\nconst getAnnonceTitle = (a) =>\n  get(a,\n    \"text-body-1 (8)\",           // ✅ version (très discriminant)\n    \"text-headline-1-expanded\",\n    \"text-headline-1-expanded (2)\",\n    \"text-headline-1\",\n    \"relative\",\n    \"Nom_annonce\",\n    \"annonce_title\"\n  );\n\nconst getAnnonceDesc = (a) =>\n  get(a,\n    \"annonce_description\",       // ✅ ton champ propre du node matching\n    \"text-body-1 (16)\",          // ✅ description complète (exemple)\n    \"text-body-1 (14)\",          // ancien mapping\n    \"Description_complete\",\n    \"description\",\n    \"annonce_desc\"\n  );\n\nconst getAnnonceUrl = (a) =>\n  get(a,\n    \"absolute href\",\n    \"Url_Https\",\n    \"annonce_url\",\n    \"relative\"\n  );\n\n// ✅ Brand: maintenant text-body-1 (2)\nconst getAnnonceBrand = (a) =>\n  get(a,\n    \"text-body-1 (2)\",\n    \"annonce_brand_input\",\n    \"Marque_scrap\"\n  );\n\n// année brute: (4) puis (9)\nconst getAnnonceYearRaw1 = (a) => get(a, \"text-body-1 (4)\", \"annonce_year_input_1\", \"Annee_du_modele\");\nconst getAnnonceYearRaw2 = (a) => get(a, \"text-body-1 (9)\", \"annonce_year_input_2\", \"Mise_en_circulation\");\n\n// ✅ CC via filtre LBC (le + fiable) : href(5)\nconst getAnnonceCCHref = (a) => get(a, \"text-body-1 href (5)\");\n\n// ✅ modèle via href(3)\nconst getAnnonceModelHref = (a) => get(a, \"text-body-1 href (3)\");\n\n// ✅ href marque (utile pour u_moto_brand)\nconst getAnnonceBrandHref = (a) => get(a, \"text-body-1 href (2)\", \"text-body-1 href\");\n\n// km / seller\nconst getAnnonceKmField = (a) => get(a, \"text-body-1 (5)\", \"Kilomètrage\", \"Nombre_de_kilometres\", \"kilometrage\");\nconst getAnnonceSeller  = (a) => get(a, \"text-headline-1\", \"text-headline-1 (3)\", \"Nom_vendeur\", \"nom du vendeur pro\", \"seller_name\");\nconst getAnnoncePayment = (a) => get(a, \"Paiement_ou_SIREN\");\n\n// -------------------------\n// Champs modèles (référentiel)\n// -------------------------\nconst getModeleField = (m) => pick(m, [\"Modèle\",\"Modele\",\"modele\",\"Model\",\"MODELE\",\"Modèle \"]) || \"\";\nconst getMarqueField = (m) => pick(m, [\"Marque\",\"marque\",\"MARQUE\",\"Brand\",\"brand\"]) || \"\";\nconst getYearStartField = (m) => pick(m, [\"Année début\",\"Annee debut\",\"Année début \",\"Year start\",\"yearStart\"]) || \"\";\nconst getYearEndField   = (m) => pick(m, [\"Année fin\",\"Annee fin\",\"Année fin \",\"Year end\",\"yearEnd\"]) || \"\";\n\n// -------------------------\n// Normalisation / Tokenize\n// -------------------------\nconst STOP = new Set([\n  \"moto\",\"motos\",\"scooter\",\"roadster\",\"trail\",\"enduro\",\"cross\",\n  \"vend\",\"vente\",\"vends\",\"urgent\",\"etat\",\"tres\",\"super\",\"parfait\",\"excellent\",\n  \"paiement\",\"securise\",\"option\",\"full\",\"abs\",\"a2\",\"ct\",\"ok\",\n  \"km\",\"kms\",\"kilometrage\",\"kilometres\",\"boite\",\"vitesse\",\"manuelle\",\"automatique\",\n  \"prix\",\"euro\",\"eur\",\"garantie\",\"factures\",\"entretien\",\"revision\",\"controle\"\n]);\n\nfunction normalize(text) {\n  if (!text) return \"\";\n  let s = String(text)\n    .normalize(\"NFD\")\n    .replace(/[\\u0300-\\u036f]/g, \"\")\n    .toLowerCase();\n\n  s = s.replace(/_/g, \" \");\n  s = s.replace(/[/|]/g, \" \");\n  s = s.replace(/[^a-z0-9]+/g, \" \");\n  s = s.replace(/\\s+/g, \" \").trim();\n\n  s = s.replace(/\\b(mt)\\s*0?(\\d{2})\\b/g, \"$1$2\");\n  s = s.replace(/\\b(fz)\\s*(\\d)\\b/g, \"$1$2\");\n  s = s.replace(/\\b(gs)\\s*(\\d{3,4})\\b/g, \"$1$2\");\n  s = s.replace(/\\b(dl)\\s*(\\d{3,4})\\b/g, \"$1$2\");\n  s = s.replace(/\\b(v\\s*strom)\\b/g, \"vstrom\");\n  s = s.replace(/\\b(v[-\\s]?strom)\\b/g, \"vstrom\");\n  s = s.replace(/\\b(dr)\\s*z\\b/g, \"drz\");\n\n  return s;\n}\n\n// ✅ clé marque canonique : supprime espaces (CF MOTO == CFMOTO)\nfunction brandKey(brand) {\n  return normalize(brand).replace(/\\s+/g, \"\");\n}\n\nfunction splitAlphaNum(tok) {\n  const parts = String(tok).match(/[a-z]+|\\d+/g);\n  return parts && parts.length > 1 ? parts : [];\n}\n\nfunction tokenizeAny(text) {\n  const n = normalize(text);\n  if (!n) return [];\n  const raw = n.split(\" \").filter(Boolean);\n  const out = [];\n\n  for (const t0 of raw) {\n    out.push(t0);\n    const parts = splitAlphaNum(t0);\n    if (parts.length) out.push(...parts);\n  }\n\n  return out.filter(t => {\n    if (!t) return false;\n    if (STOP.has(t)) return false;\n    if (/^\\d+$/.test(t)) return true;\n    return t.length >= 2;\n  });\n}\n\nfunction tokenizeModel(text) {\n  const n = normalize(text);\n  if (!n) return [];\n  const raw = n.split(\" \").filter(Boolean);\n  const out = [];\n  for (const t0 of raw) {\n    const parts = splitAlphaNum(t0);\n    if (parts.length) out.push(...parts);\n    else out.push(t0);\n  }\n  return out.filter(t => {\n    if (!t) return false;\n    if (STOP.has(t)) return false;\n    if (/^\\d+$/.test(t)) return true;\n    return t.length >= 2;\n  });\n}\n\nconst tokensAlphaOnly = (tokens) => tokens.filter(t => /[a-z]/.test(t));\n\n// -------------------------\n// Parsing année\n// -------------------------\nfunction parseYearMonth(s) {\n  const str = String(s || \"\").trim();\n  if (!str) return { year: 0, month: 0 };\n\n  const mmyyyy = str.match(/\\b(0?[1-9]|1[0-2])\\s*\\/\\s*((19|20)\\d{2})\\b/);\n  if (mmyyyy) return { month: parseInt(mmyyyy[1], 10), year: parseInt(mmyyyy[2], 10) };\n\n  const yyyy = str.match(/\\b(19|20)\\d{2}\\b/);\n  if (yyyy) return { month: 0, year: parseInt(yyyy[0], 10) };\n\n  return { year: 0, month: 0 };\n}\n\nfunction pickAnnonceYear(a, adText) {\n  const d2 = parseYearMonth(getAnnonceYearRaw2(a));\n  if (d2.year) return d2.year;\n\n  const d1 = parseYearMonth(getAnnonceYearRaw1(a));\n  if (d1.year) return d1.year;\n\n  const m = String(adText || \"\").match(/\\b(19|20)\\d{2}\\b/);\n  if (m) return parseInt(m[0], 10);\n\n  return 0;\n}\n\n// -------------------------\n// CC (✅ NEW KEYS 2026)\n// -------------------------\nfunction ccFromHref(href) {\n  const s = String(href || \"\");\n  const m = s.match(/cubic_capacity:(\\d{2,4})/i);\n  return m ? parseInt(m[1], 10) : 0;\n}\n\nfunction extractCCFromText(text) {\n  const raw = String(text || \"\");\n  if (!raw.trim()) return 0;\n\n  const noKm = raw.replace(/\\b(\\d{1,6})\\s*km\\b/gi, \" \");\n  const s = normalize(noKm);\n\n  let m = s.match(/\\b(\\d{2,4})\\s*(cc|cm3|cm 3|ccm)\\b/);\n  if (m) return parseInt(m[1], 10);\n\n  m = s.match(/\\b(\\d{2,4})(cc|cm3|ccm)\\b/);\n  if (m) return parseInt(m[1], 10);\n\n  return 0;\n}\n\nfunction extractNumbers(text) {\n  const raw = String(text || \"\")\n    .replace(/\\b(\\d{1,6})\\s*km\\b/gi, \" \")\n    .replace(/\\b(0?[1-9]|1[0-2])\\s*\\/\\s*((19|20)\\d{2})\\b/g, \" \");\n  const s = normalize(raw);\n  return (s.match(/\\b\\d{3,4}\\b/g) || []).map(n => parseInt(n, 10));\n}\n\n// ⚠️ On garde ton infer, MAIS en dernier recours (v9.3.2)\nfunction inferCCFromNumbers(adText, annonceYear) {\n  const nums = extractNumbers(adText);\n  const candidates = nums.filter(n => n >= 80 && n <= 2500 && (!annonceYear || n !== annonceYear));\n  if (!candidates.length) return 0;\n  return Math.max(...candidates);\n}\n\nfunction getAnnonceCC(a, adText, annonceYear) {\n  // 1) href cubic_capacity\n  const ccH = ccFromHref(getAnnonceCCHref(a));\n  if (ccH) return ccH;\n\n  // 2) champ cc textuel dédié (✅ text-body-1 (7) = \"1050\")\n  const ccTxt = get(a, \"text-body-1 (7)\", \"vehicule_cc_txt\", \"CC\", \"cc\");\n  const ccField = extractCCFromText(ccTxt);\n  if (ccField) return ccField;\n\n  // 3) texte global\n  const ccT = extractCCFromText(adText);\n  if (ccT) return ccT;\n\n  // 4) dernier recours\n  const ccN = inferCCFromNumbers(adText, annonceYear || 0);\n  if (ccN) return ccN;\n\n  return 0;\n}\n\n// -------------------------\n// u_moto_brand / u_moto_model depuis href\n// -------------------------\nfunction decodePlus(s) { return String(s || \"\").replace(/\\+/g, \" \"); }\n\nfunction extractBrandFromHref(href) {\n  const h = String(href || \"\");\n  if (!h) return \"\";\n  const m = h.match(/u_moto_brand:([^+&]+)/i);\n  if (!m) return \"\";\n  try { return decodeURIComponent(decodePlus(m[1])); }\n  catch (e) { return decodePlus(m[1]); }\n}\n\nfunction extractModelFromHref2(href2) {\n  const h = String(href2 || \"\");\n  if (!h) return \"\";\n  const m = h.match(/u_moto_model:([^+&]+)/i);\n  if (!m) return \"\";\n  try { return decodeURIComponent(decodePlus(m[1])); }\n  catch (e) { return decodePlus(m[1]); }\n}\n\nfunction prettyBrand(raw) {\n  const s = String(raw || \"\").trim();\n  if (!s) return \"\";\n  if (s === s.toUpperCase()) return s;\n  return s\n    .toLowerCase()\n    .split(/\\s+/)\n    .map(w => w.charAt(0).toUpperCase() + w.slice(1))\n    .join(\" \");\n}\n\nfunction resolveBrandForOutput(a, hrefBrand) {\n  const rawHref = extractBrandFromHref(hrefBrand);\n  const rawField = getAnnonceBrand(a);\n  return prettyBrand(rawHref || rawField);\n}\n\nfunction cleanModelFromHref2(modelStr, brandRawOrNorm) {\n  if (!modelStr) return \"\";\n  const original = String(modelStr).replace(/_/g, \" \").trim();\n  const n = normalize(original);\n\n  if (n === \"autre\" || n.endsWith(\" autre\") || n.includes(\" autre \")) return \"\";\n\n  if (brandRawOrNorm) {\n    const bk = brandKey(brandRawOrNorm);\n    const origTokens = original.split(/\\s+/);\n\n    for (let take = Math.min(4, origTokens.length); take >= 1; take--) {\n      const head = origTokens.slice(0, take).join(\" \");\n      if (brandKey(head) === bk) {\n        return origTokens.slice(take).join(\" \").trim();\n      }\n    }\n  }\n\n  return original;\n}\n\nfunction isHref2Autre(href2) {\n  const raw = extractModelFromHref2(href2);\n  const n = normalize(raw);\n  return !raw || n === \"autre\" || n.endsWith(\" autre\") || n.includes(\" autre \");\n}\n\nfunction extractModelHintFromTitle(title, brandRawOrNorm) {\n  const t = String(title || \"\").trim();\n  if (!t) return \"\";\n\n  let s = t;\n\n  if (brandRawOrNorm) {\n    const bk = brandKey(brandRawOrNorm);\n    const toks = s.split(/\\s+/);\n    for (let take = Math.min(4, toks.length); take >= 1; take--) {\n      const head = toks.slice(0, take).join(\" \");\n      if (brandKey(head) === bk) {\n        s = toks.slice(take).join(\" \").trim();\n        break;\n      }\n    }\n  }\n\n  s = s.replace(/\\b(neuf|neuve|garantie|disponible|stock|espace|motos|moto|ans|km)\\b/gi, \" \");\n\n  const toks = tokenizeModel(s);\n  const keep = [];\n  for (const t0 of toks) {\n    if (/^(19|20)\\d{2}$/.test(t0)) continue;\n    keep.push(t0);\n    if (keep.length >= 4) break;\n  }\n  return keep.length ? keep.join(\" \") : \"\";\n}\n\n// -------------------------\n// Similarités\n// -------------------------\nfunction jaccard(aTokens, bTokens) {\n  if (!aTokens.length || !bTokens.length) return 0;\n  const A = new Set(aTokens);\n  const B = new Set(bTokens);\n  let inter = 0;\n  for (const x of A) if (B.has(x)) inter++;\n  const union = A.size + B.size - inter;\n  return union ? inter / union : 0;\n}\n\nfunction coverageSet(adSet, modelTokens) {\n  if (!modelTokens.length) return 0;\n  let hit = 0;\n  for (const t of modelTokens) if (adSet.has(t)) hit++;\n  return hit / modelTokens.length;\n}\n\nfunction getModelDominantTokens(modelRaw) {\n  const n = normalize(modelRaw);\n  const nums = n.match(/\\b\\d{3,4}\\b/g) || [];\n  if (nums.length) return nums.map(Number);\n  const toks = tokenizeAny(modelRaw);\n  return toks.filter(t => /\\d/.test(t) || t.length >= 4);\n}\n\nfunction modelVariants(modelRaw) {\n  const cleaned = String(modelRaw || \"\").replace(/[|]/g, \"/\");\n  const parts = cleaned.split(\"/\").map(p => p.trim()).filter(Boolean);\n  return Array.from(new Set(parts.map(p => normalize(p)).filter(Boolean)));\n}\n\n// -------------------------\n// Seller flags\n// -------------------------\nfunction parseKmFromField(s) {\n  const str = String(s || \"\");\n  const m = str.replace(/\\u202f/g, \" \").replace(/\\s/g, \"\").match(/(\\d{1,6})km/i);\n  return m ? parseInt(m[1], 10) : 0;\n}\n\nfunction detectSellerFlags(a, adText) {\n  const sellerName = String(getAnnonceSeller(a) || \"\").trim();\n  const payment = String(getAnnoncePayment(a) || \"\").trim();\n  const km = parseKmFromField(getAnnonceKmField(a));\n\n  const blob = `${sellerName} ${payment} ${adText}`;\n\n  const proSignals = /\\b(siret|siren|tva|rcs|immatricul|professionnel|vendeur\\s*pro|concession\\b|concessionnaire|garage|showroom|reprise|financement|leasing|cr[eé]dit)\\b/i;\n  const proFalseContext = /\\b(entretenu(e)?|revision|r[eé]vis[eé])\\s+(chez|en)\\s+(le|la)\\s+(concessionnaire|garage)\\b/i;\n  const companySignals = /\\b(sarl|sas|eurl|auto-entrepreneur|entreprise|moto(s)?\\s*occ|occasion(s)?|motors|autos?)\\b/i;\n\n  let isPro = false;\n  if (sellerName) isPro = companySignals.test(sellerName) || /\\b(siret|siren)\\b/i.test(blob);\n  if (!isPro && proSignals.test(blob) && !proFalseContext.test(blob)) isPro = true;\n\n  const newTrue = /\\b(0\\s*km|0\\s*kms|jamais\\s+immatricul[eé]e?|moto\\s+neuve|vehicule\\s+neuf|neuf\\s+jamais\\s+roul[eé])\\b/i;\n  const newFalseParts = /\\b(batterie|pneu(x)?|plaquette(s)?|kit\\s*chaine|chaine|disque(s)?|huile|vidange|filtre)\\s+neuf(s|ve|ves)?\\b/i;\n\n  let isNew = newTrue.test(adText);\n  if (!isNew && /\\b(neuf|neuve)\\b/i.test(adText) && !newFalseParts.test(adText)) isNew = false;\n\n  return { sellerName, km, isPro, isNew };\n}\n\n// -------------------------\n// Out of scope (ne SKIP pas si modelHint valide)\n// -------------------------\nfunction isNonMotoListing(a, adTextUsed, modelHintClean) {\n  const typeField = normalize(get(a, \"text-body-1 (10)\", \"Type_vehicule\", \"type\", \"vehicle_type\"));\n\n  if (modelHintClean && String(modelHintClean).trim() !== \"\") return { skip: false, reason: \"\" };\n\n  if (typeField && typeField !== \"moto\") return { skip: true, reason: `type_not_moto:${typeField}` };\n\n  const title = normalize(getAnnonceTitle(a));\n  const desc  = normalize(getAnnonceDesc(a));\n  const blob  = `${title} ${desc} ${normalize(adTextUsed)}`;\n\n  const reNonMoto = /\\b(trottinette|edpm|nami|dualtron|kaabo|weped|speedway|monoroue|gyropode|hoverboard)\\b/i;\n  const reParts   = /\\b(piece|pieces|accessoire|accessoires|casque|gants|blouson|bottes|pneu|pneus|jante|echappement|ligne|silencieux)\\b/i;\n\n  if (reNonMoto.test(blob)) return { skip: true, reason: \"non_moto_vehicle\" };\n  if (reParts.test(blob))   return { skip: true, reason: \"parts_or_accessories\" };\n\n  return { skip: false, reason: \"\" };\n}\n\n// -------------------------\n// Split modèles / annonces\n// -------------------------\nconst modeles = [];\nconst annonces = [];\n\nfor (const item of allItems) {\n  const isModele = !!getMarqueField(item) && !!getModeleField(item) && (get(item, \"Cylindrée (cc)\", \"Type (M/S/E)\", \"Type(M/S/E)\", \"Type (M\\\\/S\\\\/E)\") !== \"\");\n  const isAnnonce = get(item, \"text-body-1 (8)\", \"text-headline-1-expanded\", \"relative\", \"absolute href\", \"Url_Https\", \"annonce_url\") !== \"\";\n  if (isModele) modeles.push(item);\n  else if (isAnnonce) annonces.push(item);\n}\n\nif (!modeles.length) {\n  return annonces.map(a => ({ json: { ...a, matching_engine: \"NO_MODELS_INPUT\", matched_score: 0, needs_review: true } }));\n}\n\n// -------------------------\n// Index marques (sur brandKey)\n// -------------------------\nconst brandIndex = new Map();\n\nfor (const m of modeles) {\n  const brandRaw = getMarqueField(m);\n  const modelRaw = getModeleField(m);\n\n  const bKey = brandKey(brandRaw);\n  if (!bKey) continue;\n\n  const variants = modelVariants(modelRaw);\n  if (!variants.length) continue;\n\n  const ys = parseInt(getYearStartField(m) || 0, 10) || 0;\n  let ye = getYearEndField(m);\n  ye = (ye === null || ye === undefined || ye === \"\") ? 9999 : (parseInt(ye, 10) || 9999);\n\n  const cc = Math.round(Number(get(m, \"Cylindrée (cc)\") || 0)) || 0;\n\n  const variantAlphaTokens = variants\n    .map(v => tokensAlphaOnly(tokenizeAny(v)))\n    .filter(t => t.length);\n\n  if (!variantAlphaTokens.length) continue;\n\n  const doms = getModelDominantTokens(modelRaw);\n  const modelNoSpace = normalize(modelRaw).replace(/\\s+/g, \"\");\n\n  const prepared = {\n    raw: m,\n    brandRaw,\n    bKey,\n    ys,\n    ye,\n    cc,\n    variants,\n    variantAlphaTokens,\n    combinedTok: tokenizeAny(`${brandRaw} ${modelRaw}`),\n    dominants: doms,\n    modelNoSpace\n  };\n\n  if (!brandIndex.has(bKey)) brandIndex.set(bKey, []);\n  brandIndex.get(bKey).push(prepared);\n}\n\nconst knownBrandKeys = Array.from(brandIndex.keys()).sort((a, b) => b.length - a.length);\n\n// -------------------------\n// Seuils (-10%)\n// -------------------------\nconst MIN_COV_ALPHA = 0.54;\nconst MIN_ACCEPT    = 0.648;\nconst CC_BLOCK_DIFF = 315;\nconst CC_PENALTY    = 0.072;\n\nfunction computeScore(adTok, adSet, p) {\n  let bestCov = 0;\n  for (const vat of p.variantAlphaTokens) {\n    const cov = coverageSet(adSet, vat);\n    if (cov > bestCov) bestCov = cov;\n  }\n  const jac = jaccard(adTok, p.combinedTok);\n  const score = (0.88 * bestCov) + (0.12 * jac);\n  return { score, bestCov, jac };\n}\n\n// -------------------------\n// MATCHING\n// -------------------------\nconst results = [];\n\nfor (const a of annonces) {\n  const title = getAnnonceTitle(a);\n  const desc  = getAnnonceDesc(a);\n  const url   = getAnnonceUrl(a);\n\n  const hrefModel = getAnnonceModelHref(a) || \"\"; // ✅ href(3)\n  const hrefCC    = getAnnonceCCHref(a) || \"\";    // ✅ href(5)\n\n  const hrefBrand = getAnnonceBrandHref(a) || \"\"; // ✅ href(2) ou href marque fallback\n  const brandOut  = resolveBrandForOutput(a, hrefBrand);\n\n  const brandFromHrefRaw = extractBrandFromHref(hrefBrand);\n  const brandFromHrefKey = brandKey(brandFromHrefRaw);\n\n  const brandFromFieldRaw = getAnnonceBrand(a);\n  const brandFromFieldKey = brandKey(brandFromFieldRaw);\n\n  const ccTxtField = get(a, \"text-body-1 (7)\", \"vehicule_cc_txt\", \"CC\", \"cc\"); // ✅\n\n  const adTextBase = `${title} ${desc} ${ccTxtField} ${hrefCC}`.trim();\n  const adNormBase = normalize(adTextBase);\n\n  // marque: priorité href -> champ -> détection dans texte\n  let brandAnnonceKey = brandFromHrefKey || brandFromFieldKey;\n\n  if (!brandAnnonceKey) {\n    const blobKey = brandKey(adNormBase);\n    for (const bk of knownBrandKeys) {\n      if (blobKey.includes(bk)) { brandAnnonceKey = bk; break; }\n    }\n  }\n\n  // modèle hint depuis hrefModel\n  const rawModelFromHref2 = extractModelFromHref2(hrefModel);\n\n  let modelHint = cleanModelFromHref2(\n    rawModelFromHref2,\n    brandFromHrefRaw || brandFromFieldRaw\n  );\n\n  const titleHint = extractModelHintFromTitle(\n    title,\n    brandFromHrefRaw || brandFromFieldRaw\n  );\n\n  const hintHasDigits = (s) => /\\b\\d{2,4}\\b/.test(normalize(s));\n  const hintTokenCount = (s) => tokenizeModel(s).length;\n\n  const modelHintGeneric =\n    !modelHint ||\n    (!hintHasDigits(modelHint) && hintTokenCount(modelHint) <= 1);\n\n  if (modelHintGeneric && titleHint) {\n    const titleBetter = hintHasDigits(titleHint) || hintTokenCount(titleHint) >= 2;\n    if (titleBetter) modelHint = titleHint;\n  }\n\n  if (!modelHint && isHref2Autre(hrefModel)) {\n    modelHint = titleHint;\n  }\n\n  const adTextUsed = modelHint ? `${adTextBase} ${modelHint}`.trim() : adTextBase;\n\n  const annonceYear = pickAnnonceYear(a, adTextUsed);\n  const annonceCC   = getAnnonceCC(a, adTextUsed, annonceYear);\n  const sellerFlags = detectSellerFlags(a, adTextUsed);\n\n  const nonMoto = isNonMotoListing(a, adTextUsed, modelHint);\n  if (nonMoto.skip) {\n    results.push({\n      json: {\n        ...a,\n        annonce_title: title,\n        annonce_url: url,\n        annonce_year_resolved: annonceYear || \"\",\n        annonce_cc_resolved: annonceCC || \"\",\n        cc_source_href: ccFromHref(hrefCC) || \"\",\n        seller_is_pro: sellerFlags.isPro,\n        seller_is_new: sellerFlags.isNew,\n\n        matched_ok: false,\n        matched_quality: \"no_match\",\n        matched_marque: brandOut || \"\",\n        matched_modele: modelHint || \"\",\n        matched_generations: \"\",\n        matched_coloris: \"\",\n        matched_annee_debut: \"\",\n        matched_annee_fin: \"\",\n        matched_cylindree: \"\",\n        matched_score: 0,\n\n        matching_engine: \"SKIP_OUT_OF_SCOPE\",\n        needs_review: false,\n        reason_no_match: nonMoto.reason,\n        _match_debug: {\n          detectedBrand: normalize(brandFromHrefRaw || brandFromFieldRaw) || null,\n          brandFromHref: normalize(brandFromHrefRaw) || null,\n          hrefBrand: hrefBrand || null,\n          hrefModel,\n          modelHint\n        }\n      }\n    });\n    continue;\n  }\n\n  if (!brandAnnonceKey || !brandIndex.has(brandAnnonceKey)) {\n    results.push({\n      json: {\n        ...a,\n        annonce_title: title,\n        annonce_url: url,\n        annonce_year_resolved: annonceYear || \"\",\n        annonce_cc_resolved: annonceCC || \"\",\n        cc_source_href: ccFromHref(hrefCC) || \"\",\n        seller_is_pro: sellerFlags.isPro,\n        seller_is_new: sellerFlags.isNew,\n\n        matched_ok: false,\n        matched_quality: \"no_match\",\n        matched_marque: \"\",\n        matched_modele: modelHint || \"\",\n        matched_generations: \"\",\n        matched_coloris: \"\",\n        matched_annee_debut: \"\",\n        matched_annee_fin: \"\",\n        matched_cylindree: \"\",\n        matched_score: 0,\n\n        matching_engine: \"NO_MATCH\",\n        needs_review: true,\n        reason_no_match: \"brand_not_in_ref\",\n        _match_debug: {\n          detectedBrand: normalize(brandFromHrefRaw || brandFromFieldRaw) || null,\n          brandFromHref: normalize(brandFromHrefRaw) || null,\n          hrefBrand: hrefBrand || null,\n          brandAnnonceKey,\n          hrefModel,\n          modelHint,\n          adTextPreview: adTextUsed.slice(0, 250),\n        }\n      }\n    });\n    continue;\n  }\n\n  const adTok = tokenizeAny(adTextUsed);\n  const adSet = new Set(adTok);\n  const adNumbers = extractNumbers(adTextUsed);\n\n  let baseCandidates = brandIndex.get(brandAnnonceKey) || [];\n\n  if (annonceCC) {\n    const filtered = baseCandidates.filter(p => !p.cc || Math.abs(p.cc - annonceCC) <= CC_BLOCK_DIFF);\n    if (filtered.length >= 3) baseCandidates = filtered;\n  }\n\n  const passes = [{ useYear: true }, { useYear: false }];\n\n  let bestPrepared = null;\n  let bestScore = 0;\n  let bestCov = 0;\n  let bestJac = 0;\n  let usedYearFilter = false;\n  let ccPenaltyApplied = false;\n  let dominantGateRejectedCount = 0;\n\n  for (const pass of passes) {\n    let foundInPass = false;\n\n    for (const p of baseCandidates) {\n      if (pass.useYear && annonceYear) {\n        if (annonceYear < p.ys || annonceYear > p.ye) continue;\n      }\n\n      // Dominant gate assoupli si hint/hrefModel\n      const hasHint = !!(modelHint && String(modelHint).trim());\n      const hasHref2Model = !!(rawModelFromHref2 && String(rawModelFromHref2).trim());\n      const relaxDominantGate = hasHint || hasHref2Model;\n\n      let hintBypass = false;\n      if (hasHint) {\n        const modelNoSpace = p.modelNoSpace || \"\";\n        const hintNoSpace = normalize(modelHint).replace(/\\s+/g, \"\");\n        if (modelNoSpace && hintNoSpace.includes(modelNoSpace)) hintBypass = true;\n\n        if (!hintBypass && p.dominants && p.dominants.length) {\n          const hintTok = new Set(tokenizeAny(modelHint));\n          for (const d of p.dominants) {\n            if (typeof d === \"number\") {\n              if (adNumbers.includes(d)) { hintBypass = true; break; }\n            } else {\n              if (hintTok.has(String(d))) { hintBypass = true; break; }\n            }\n          }\n        }\n      }\n\n      if (!relaxDominantGate && !hintBypass && p.dominants && p.dominants.length) {\n        let dominantHit = false;\n        for (const d of p.dominants) {\n          if (typeof d === \"number\") {\n            if (adNumbers.includes(d)) { dominantHit = true; break; }\n          } else {\n            if (adSet.has(String(d))) { dominantHit = true; break; }\n          }\n        }\n        if (!dominantHit) { dominantGateRejectedCount++; continue; }\n      }\n\n      const { score, bestCov: covA, jac } = computeScore(adTok, adSet, p);\n      if (covA < MIN_COV_ALPHA) continue;\n\n      let finalScore = score;\n\n      if (annonceCC && p.cc) {\n        const diff = Math.abs(p.cc - annonceCC);\n        if (diff >= CC_BLOCK_DIFF) continue;\n        if (diff > 50) { finalScore = Math.max(0, finalScore - CC_PENALTY); ccPenaltyApplied = true; }\n      }\n\n      if (finalScore > bestScore) {\n        bestScore = finalScore;\n        bestPrepared = p;\n        bestCov = covA;\n        bestJac = jac;\n        usedYearFilter = pass.useYear && !!annonceYear;\n        foundInPass = true;\n      }\n    }\n\n    if (pass.useYear && foundInPass) break;\n  }\n\n  const accept = !!bestPrepared && bestScore >= MIN_ACCEPT;\n  const best = accept ? bestPrepared.raw : null;\n\n  results.push({\n    json: {\n      ...a,\n      annonce_title: title,\n      annonce_url: url,\n      annonce_year_resolved: annonceYear || \"\",\n      used_year_filter: usedYearFilter,\n      annonce_cc_resolved: annonceCC || \"\",\n      cc_source_href: ccFromHref(hrefCC) || \"\",\n      seller_is_pro: sellerFlags.isPro,\n      seller_is_new: sellerFlags.isNew,\n\n      matched_ok: accept,\n      matched_quality: accept ? \"auto_match\" : \"no_match\",\n\n      matched_marque: accept ? (getMarqueField(best) || \"\") : (brandOut || \"\"),\n      matched_modele: accept ? (getModeleField(best) || \"\") : (modelHint || \"\"),\n      matched_generations: accept ? (get(best, \"Spéc/Génération\", \"Spec/Generation\") || \"\") : \"\",\n      matched_coloris: accept ? (get(best, \"Coloris commercial\") || \"\") : \"\",\n      matched_annee_debut: accept ? (get(best, \"Année début\") || getYearStartField(best) || \"\") : \"\",\n      matched_annee_fin: accept ? (get(best, \"Année fin\") || getYearEndField(best) || \"\") : \"\",\n      matched_cylindree: accept ? (get(best, \"Cylindrée (cc)\") || \"\") : \"\",\n\n      matched_score: accept ? Number(bestScore.toFixed(3)) : 0,\n      matched_jaccard: Number(bestJac.toFixed(3)),\n      matching_engine: accept ? \"AUTO_V9_3_2_BRANDKEY_LBC2026\" : \"NO_MATCH\",\n      needs_review: !accept,\n      reason_no_match: accept ? \"\" : \"below_threshold_or_no_candidate_after_gates\",\n\n      _match_debug: {\n        detectedBrand: normalize(brandFromHrefRaw || brandFromFieldRaw) || null,\n        brandFromHref: normalize(brandFromHrefRaw) || null,\n        hrefBrand: hrefBrand || null,\n        brandAnnonceKey,\n        adTextPreview: adTextUsed.slice(0, 250),\n        hrefModel,\n        modelHint,\n        adNumbers,\n        dominantGateRejectedCount,\n        covAlphaBest: Number(bestCov.toFixed(3)),\n        jacBest: Number(bestJac.toFixed(3)),\n        minCovAlpha: MIN_COV_ALPHA,\n        minAccept: MIN_ACCEPT,\n        ccPenaltyApplied,\n        ccResolved: annonceCC || 0,\n        adTokensCount: adTok.length,\n      }\n    }\n  });\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32,
+        864
+      ],
+      "id": "24869d1d-4f95-43ae-88d2-98ebf627ed8f",
+      "name": "4rd match - attention fiabilité"
+    },
+    {
+      "parameters": {
+        "tableId": "n8n"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        864,
+        432
+      ],
+      "id": "50969070-6350-4183-ad00-3f2dc7906e43",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "hiJuoTp06K5OBCrI",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1RY-oclATBSPoGnRBPVXIW3gdwJbuLqOsSVaFWpNXpkI/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 105158728,
+          "mode": "list",
+          "cachedResultName": "V2 All Datas - n8n",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1RY-oclATBSPoGnRBPVXIW3gdwJbuLqOsSVaFWpNXpkI/edit#gid=105158728"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Nom_annonce",
+              "displayName": "Nom_annonce",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Url_Https",
+              "displayName": "Url_Https",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Nombre de favoris sur l'annonce",
+              "displayName": "Nombre de favoris sur l'annonce",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Date de mise en publication",
+              "displayName": "Date de mise en publication",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Heure de mise en publication",
+              "displayName": "Heure de mise en publication",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Prix_affiche",
+              "displayName": "Prix_affiche",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Photo_1",
+              "displayName": "Photo_1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Photo_2",
+              "displayName": "Photo_2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Photo_3",
+              "displayName": "Photo_3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Marque_scrap",
+              "displayName": "Marque_scrap",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Annee_du_modele",
+              "displayName": "Annee_du_modele",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Nombre_de_kilometres",
+              "displayName": "Nombre_de_kilometres",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Boite",
+              "displayName": "Boite",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Mise_en_circulation",
+              "displayName": "Mise_en_circulation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Type_vehicule",
+              "displayName": "Type_vehicule",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Description_complete",
+              "displayName": "Description_complete",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Statut_annonce",
+              "displayName": "Statut_annonce",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Nom_vendeur",
+              "displayName": "Nom_vendeur",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Membre depuis",
+              "displayName": "Membre depuis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Dernière activité",
+              "displayName": "Dernière activité",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Paiement_ou_SIREN",
+              "displayName": "Paiement_ou_SIREN",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Infos_vendeur",
+              "displayName": "Infos_vendeur",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "matched_marque",
+              "displayName": "matched_marque",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "matched_modele",
+              "displayName": "matched_modele",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "matched_generations",
+              "displayName": "matched_generations",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "generation_label",
+              "displayName": "generation_label",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "generation_year_start",
+              "displayName": "generation_year_start",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "generation_year_end",
+              "displayName": "generation_year_end",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "matched_score",
+              "displayName": "matched_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "matched_quality",
+              "displayName": "matched_quality",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "needs_review",
+              "displayName": "needs_review",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "3d1b3edf-31ff-4671-8eac-02a74eb7e6f6",
+      "name": "Save to All Datas1",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1008,
+        432
+      ],
+      "typeVersion": 4
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extraction JSON Leboncoin",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GET Modeles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraction JSON Leboncoin": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Modeles": {
+      "main": [
+        [
+          {
+            "node": "Merge n°2",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Merge n°3",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Merge n°",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Merge n°1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wait 5s": {
+      "main": [
+        [
+          {
+            "node": "1st Match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Wait 5s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Rename Columns 1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge n°2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Rename Columns 2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge n°3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge n°2": {
+      "main": [
+        [
+          {
+            "node": "2nd Match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge n°3": {
+      "main": [
+        [
+          {
+            "node": "3rd match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rename Columns 1": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rename Columns 2": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rename Columns 3": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If3": {
+      "main": [
+        [
+          {
+            "node": "Rename Columns 3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge n°",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3rd match": {
+      "main": [
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If4": {
+      "main": [
+        [
+          {
+            "node": "Rename Columns 4.0",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge n°1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge n°": {
+      "main": [
+        [
+          {
+            "node": "4rd match - attention fiabilité",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If6": {
+      "main": [
+        [
+          {
+            "node": "Rename Columns 4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save to Datas à revoir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge n°1": {
+      "main": [
+        [
+          {
+            "node": "If7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If7": {
+      "main": [
+        [
+          {
+            "node": "5th match - new modele",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2nd Match": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1st Match": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5th match - new modele": {
+      "main": [
+        [
+          {
+            "node": "If6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rename Columns 4": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rename Columns 4.0": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4rd match - attention fiabilité": {
+      "main": [
+        [
+          {
+            "node": "If4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a row": {
+      "main": [
+        [
+          {
+            "node": "Save to All Datas1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "8ff1ec72-41e8-4e1e-b83e-5fdfe93421ed",
+  "meta": {
+    "instanceId": "15aba3c3d62f60be4908fe3668f1293dbedd9ce7f0d5f7689f0f45d6568b8f82"
+  },
+  "id": "j72akkqWYTL-sn-SjPIVO",
+  "tags": []
+}

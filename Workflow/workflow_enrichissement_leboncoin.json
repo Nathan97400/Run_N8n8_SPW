@@ -1,0 +1,360 @@
+{
+  "name": "Enrichissement Annonces Leboncoin - WSP V1",
+  "nodes": [
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "event": "messageReceived",
+        "simple": true,
+        "filters": {
+          "includeSpamTrash": false,
+          "q": "has:attachment"
+        },
+        "options": {
+          "attachments": true
+        }
+      },
+      "id": "gmail-trigger-001",
+      "name": "Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [250, 300],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "1",
+          "name": "Gmail OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "fromJson",
+        "binaryPropertyName": "data",
+        "destinationKey": "extractedData",
+        "options": {}
+      },
+      "id": "extract-attachment-002",
+      "name": "Extract Attachment",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Normalisation des données CSV/JSON\nconst items = $input.all();\n\n// Vérifier que les données existent\nif (!items || items.length === 0) {\n  return [];\n}\n\nconst normalizedItems = items.map(item => {\n  const raw = item.json;\n  \n  // Fonction helper pour récupérer une valeur avec plusieurs clés possibles\n  const getValue = (...keys) => {\n    for (const key of keys) {\n      if (raw[key] !== undefined && raw[key] !== null && raw[key] !== '') {\n        return raw[key];\n      }\n    }\n    return null;\n  };\n  \n  // Normaliser les colonnes avec mapping CSV/JSON\n  return {\n    json: {\n      href: getValue('absolute href', 'href', 'url'),\n      titre: getValue('text-headline-1-expanded', 'titre', 'title'),\n      marque: getValue('text-body-1 (4)', 'marque', 'brand'),\n      prix: getValue('text-headline-2-expanded', 'prix', 'price'),\n      date_publication: getValue('text-caption-1 (1)', 'date_publication', 'date'),\n      kilometrage: getValue('text-body-1 (5)', 'kilometrage', 'km'),\n      annee: getValue('text-body-1 (6)', 'annee', 'year'),\n      description: getValue('text-body-1-expanded', 'description', 'desc'),\n      localisation: getValue('text-caption-1 (2)', 'localisation', 'location'),\n      vendeur: getValue('text-body-1 (7)', 'vendeur', 'seller'),\n      // Conserver les données brutes pour debug\n      _raw: raw\n    }\n  };\n});\n\nreturn normalizedItems;"
+      },
+      "id": "normalize-data-003",
+      "name": "Normalize Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "operation": "removeDuplicateInputItems",
+        "compare": "selectedFields",
+        "fieldsToCompare": "href",
+        "options": {
+          "removeOtherFields": false
+        }
+      },
+      "id": "remove-duplicates-004",
+      "name": "Remove Duplicates",
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Filtrer les lignes vides\nconst items = $input.all();\n\n// Vérifier que les données existent\nif (!items || items.length === 0) {\n  return [];\n}\n\nconst filteredItems = items.filter(item => {\n  const json = item.json;\n  \n  // Vérifier que href et titre existent et ne sont pas vides\n  const hasHref = json.href && typeof json.href === 'string' && json.href.trim() !== '';\n  const hasTitre = json.titre && typeof json.titre === 'string' && json.titre.trim() !== '';\n  \n  if (!hasHref || !hasTitre) {\n    return false;\n  }\n  \n  // Compter les champs non vides (hors _raw)\n  const nonEmptyFields = Object.entries(json)\n    .filter(([key, value]) => {\n      if (key === '_raw') return false;\n      return value !== null && value !== undefined && value !== '';\n    })\n    .length;\n  \n  // Garder seulement les lignes avec au moins 3 champs remplis\n  return nonEmptyFields >= 3;\n});\n\n// Retourner explicitement au format [{json: {...}}]\nreturn filteredItems.map(item => ({\n  json: item.json\n}));"
+      },
+      "id": "filter-empty-rows-005",
+      "name": "Filter Empty Rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "fileSelector": "C:\\Users\\natha\\Documents\\projets_claude-code\\n8n_builders\\BDD Modèles\\motorcycles_brands_full_ENRICHED.json",
+        "dataPropertyName": "bddModeles"
+      },
+      "id": "read-bdd-modeles-006",
+      "name": "Read BDD Modèles",
+      "type": "n8n-nodes-base.readBinaryFiles",
+      "typeVersion": 1,
+      "position": [650, 500]
+    },
+    {
+      "parameters": {
+        "operation": "fromJson",
+        "binaryPropertyName": "bddModeles",
+        "destinationKey": "modeles",
+        "options": {}
+      },
+      "id": "parse-bdd-json-007",
+      "name": "Parse BDD JSON",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [850, 500]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByFields",
+        "joinMode": "enrichInput1",
+        "matchFields": {
+          "matchField": [
+            {
+              "field1": "marque",
+              "field2": "Marque"
+            }
+          ]
+        },
+        "outputDataFrom": "both",
+        "options": {
+          "fuzzyCompare": false,
+          "disableDotNotation": false
+        }
+      },
+      "id": "merge-data-008",
+      "name": "Merge Data",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Enrichissement avancé avec matching intelligent\nconst annonces = $input.all();\n\n// Vérifier que les données existent\nif (!annonces || annonces.length === 0) {\n  return [];\n}\n\n// Fonction de normalisation de texte\nfunction normalize(str) {\n  if (!str) return '';\n  return str.toString().toLowerCase().trim().replace(/\\s+/g, ' ');\n}\n\n// Fonction pour extraire les modèles de la BDD depuis le flux fusionné\nfunction getBDDModeles() {\n  const allModeles = [];\n  \n  for (const item of annonces) {\n    if (item.json.Marque && item.json.Modèle) {\n      allModeles.push({\n        Marque: item.json.Marque,\n        Modèle: item.json.Modèle,\n        'Année début': item.json['Année début'],\n        'Année fin': item.json['Année fin'],\n        'Cylindrée (cc)': item.json['Cylindrée (cc)'],\n        'Type (M/S/E)': item.json['Type (M/S/E)'],\n        'Coloris commercial': item.json['Coloris commercial']\n      });\n    }\n  }\n  \n  return allModeles;\n}\n\nconst bddModeles = getBDDModeles();\n\n// Fonction de matching de modèle\nfunction findBestMatch(titre, marque, bdd) {\n  const normalizedTitre = normalize(titre);\n  const normalizedMarque = normalize(marque);\n  \n  if (!normalizedTitre || !normalizedMarque || bdd.length === 0) {\n    return null;\n  }\n  \n  // Filtrer par marque d'abord\n  const matchesMarque = bdd.filter(m => \n    normalize(m.Marque) === normalizedMarque\n  );\n  \n  if (matchesMarque.length === 0) {\n    return null;\n  }\n  \n  // Trouver le meilleur match de modèle\n  let bestMatch = null;\n  let maxScore = 0;\n  \n  for (const model of matchesMarque) {\n    const modelName = normalize(model.Modèle);\n    \n    if (normalizedTitre.includes(modelName)) {\n      const score = modelName.length;\n      \n      if (score > maxScore) {\n        maxScore = score;\n        bestMatch = model;\n      }\n    }\n  }\n  \n  return bestMatch;\n}\n\n// Enrichir chaque annonce\nconst enrichedData = annonces.map(annonce => {\n  const match = findBestMatch(\n    annonce.json.titre,\n    annonce.json.marque,\n    bddModeles\n  );\n  \n  // Construire l'objet enrichi\n  return {\n    json: {\n      // Données originales\n      href: annonce.json.href,\n      titre: annonce.json.titre,\n      marque: annonce.json.marque,\n      prix: annonce.json.prix,\n      date_publication: annonce.json.date_publication,\n      kilometrage: annonce.json.kilometrage,\n      annee: annonce.json.annee,\n      description: annonce.json.description,\n      localisation: annonce.json.localisation,\n      vendeur: annonce.json.vendeur,\n      \n      // Colonnes enrichies\n      merge_marque: match?.Marque || annonce.json.marque,\n      merge_modele: match?.Modèle || null,\n      merge_annees_production: match ? \n        `${match['Année début'] || '?'} → ${match['Année fin'] || '?'}` : \n        null,\n      merge_cylindree: match?.['Cylindrée (cc)'] || null,\n      merge_type: match?.['Type (M/S/E)'] || null,\n      merge_coloris: match?.['Coloris commercial'] || null,\n      \n      // Métadonnées de matching\n      match_found: !!match,\n      match_confidence: match ? 'high' : 'none',\n      processed_at: new Date().toISOString()\n    }\n  };\n});\n\nreturn enrichedData;"
+      },
+      "id": "enrich-with-models-009",
+      "name": "Enrich with Models",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "create",
+        "tableId": "annonces_motos",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldName": "url_annonce",
+              "fieldValue": "={{ $json.href }}"
+            },
+            {
+              "fieldName": "titre",
+              "fieldValue": "={{ $json.titre }}"
+            },
+            {
+              "fieldName": "marque_annonce",
+              "fieldValue": "={{ $json.marque }}"
+            },
+            {
+              "fieldName": "prix",
+              "fieldValue": "={{ $json.prix }}"
+            },
+            {
+              "fieldName": "date_publication",
+              "fieldValue": "={{ $json.date_publication }}"
+            },
+            {
+              "fieldName": "kilometrage",
+              "fieldValue": "={{ $json.kilometrage }}"
+            },
+            {
+              "fieldName": "annee",
+              "fieldValue": "={{ $json.annee }}"
+            },
+            {
+              "fieldName": "description",
+              "fieldValue": "={{ $json.description }}"
+            },
+            {
+              "fieldName": "localisation",
+              "fieldValue": "={{ $json.localisation }}"
+            },
+            {
+              "fieldName": "vendeur",
+              "fieldValue": "={{ $json.vendeur }}"
+            },
+            {
+              "fieldName": "marque_enrichie",
+              "fieldValue": "={{ $json.merge_marque }}"
+            },
+            {
+              "fieldName": "modele_enrichi",
+              "fieldValue": "={{ $json.merge_modele }}"
+            },
+            {
+              "fieldName": "annees_production",
+              "fieldValue": "={{ $json.merge_annees_production }}"
+            },
+            {
+              "fieldName": "cylindree",
+              "fieldValue": "={{ $json.merge_cylindree }}"
+            },
+            {
+              "fieldName": "type_moto",
+              "fieldValue": "={{ $json.merge_type }}"
+            },
+            {
+              "fieldName": "coloris",
+              "fieldValue": "={{ $json.merge_coloris }}"
+            },
+            {
+              "fieldName": "match_found",
+              "fieldValue": "={{ $json.match_found }}"
+            },
+            {
+              "fieldName": "match_confidence",
+              "fieldValue": "={{ $json.match_confidence }}"
+            },
+            {
+              "fieldName": "processed_at",
+              "fieldValue": "={{ $json.processed_at }}"
+            }
+          ]
+        },
+        "options": {
+          "upsert": true,
+          "onConflict": "url_annonce"
+        }
+      },
+      "id": "insert-to-supabase-010",
+      "name": "Insert to Supabase",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1650, 300],
+      "credentials": {
+        "supabaseApi": {
+          "id": "2",
+          "name": "Supabase API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract Attachment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Attachment": {
+      "main": [
+        [
+          {
+            "node": "Normalize Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Data": {
+      "main": [
+        [
+          {
+            "node": "Remove Duplicates",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read BDD Modèles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove Duplicates": {
+      "main": [
+        [
+          {
+            "node": "Filter Empty Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Empty Rows": {
+      "main": [
+        [
+          {
+            "node": "Merge Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read BDD Modèles": {
+      "main": [
+        [
+          {
+            "node": "Parse BDD JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse BDD JSON": {
+      "main": [
+        [
+          {
+            "node": "Merge Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Data": {
+      "main": [
+        [
+          {
+            "node": "Enrich with Models",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich with Models": {
+      "main": [
+        [
+          {
+            "node": "Insert to Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2026-02-15T00:00:00.000Z",
+  "versionId": "1.0.0"
+}

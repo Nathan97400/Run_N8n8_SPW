@@ -1,0 +1,98 @@
+[
+  {
+    "href": "https://www.leboncoin.fr/motos/json001",
+    "titre": "KTM 690 Duke 2019 - Orange",
+    "marque": "KTM",
+    "prix": "6 500 €",
+    "date": "Publiée il y a 1 jour",
+    "km": "22000 km",
+    "year": "2019",
+    "desc": "Duke 690 orange KTM iconique. Très bonne moto polyvalente.",
+    "location": "Paris 75010",
+    "seller": "Particulier"
+  },
+  {
+    "href": "https://www.leboncoin.fr/motos/json002",
+    "titre": "Honda CB650R Neo Sports Café 2021",
+    "marque": "Honda",
+    "prix": "7 800 €",
+    "date": "Publiée il y a 3 jours",
+    "km": "11000 km",
+    "year": "2021",
+    "desc": "CB650R Neo Sports Café design moderne. État impeccable.",
+    "location": "Lyon 69003",
+    "seller": "Professionnel"
+  },
+  {
+    "href": "https://www.leboncoin.fr/motos/json003",
+    "titre": "Yamaha MT-09 SP 2020 bleu",
+    "marque": "Yamaha",
+    "prix": "8 900 €",
+    "date": "Publiée aujourd'hui",
+    "km": "14500 km",
+    "year": "2020",
+    "desc": "MT-09 SP version sport avec suspensions Öhlins. Quickshifter.",
+    "location": "Marseille 13008",
+    "seller": "Particulier"
+  },
+  {
+    "href": "https://www.leboncoin.fr/motos/json004",
+    "titre": "Kawasaki Ninja 400 verte 2022",
+    "marque": "Kawasaki",
+    "prix": "5 200 €",
+    "date": "Publiée il y a 2 jours",
+    "km": "3500 km",
+    "year": "2022",
+    "desc": "Ninja 400 comme neuve. Parfaite pour A2. Garantie constructeur.",
+    "location": "Toulouse 31100",
+    "seller": "Professionnel"
+  },
+  {
+    "href": "https://www.leboncoin.fr/motos/json005",
+    "titre": "BMW S1000RR M Sport 2021",
+    "marque": "BMW",
+    "prix": "19 500 €",
+    "date": "Publiée il y a 4 jours",
+    "km": "7200 km",
+    "year": "2021",
+    "desc": "S1000RR M Sport package carbon. Toutes les options BMW Motorrad.",
+    "location": "Bordeaux 33200",
+    "seller": "Professionnel"
+  },
+  {
+    "href": "https://www.leboncoin.fr/motos/json001",
+    "titre": "KTM 690 Duke 2019 - Orange",
+    "marque": "KTM",
+    "prix": "6 500 €",
+    "date": "Publiée il y a 1 jour",
+    "km": "22000 km",
+    "year": "2019",
+    "desc": "Duke 690 orange KTM iconique. Très bonne moto polyvalente.",
+    "location": "Paris 75010",
+    "seller": "Particulier"
+  },
+  {
+    "href": "https://www.leboncoin.fr/motos/json006",
+    "titre": "Ducati Panigale V2 2020 rouge",
+    "marque": "Ducati",
+    "prix": "15 800 €",
+    "date": "Publiée il y a 5 jours",
+    "km": "8900 km",
+    "year": "2020",
+    "desc": "Panigale V2 rouge Ducati. Supersport performante et élégante.",
+    "location": "Nice 06100",
+    "seller": "Professionnel"
+  },
+  {
+    "href": "https://www.leboncoin.fr/motos/json007",
+    "titre": "Triumph Tiger 900 Rally Pro 2021",
+    "marque": "Triumph",
+    "prix": "12 900 €",
+    "date": "Publiée il y a 1 semaine",
+    "km": "19000 km",
+    "year": "2021",
+    "desc": "Tiger 900 Rally Pro pour aventure. Valises Triumph accessoires.",
+    "location": "Nantes 44200",
+    "seller": "Particulier"
+  }
+]

@@ -1,0 +1,147 @@
+{
+  "name": "Create a row1",
+  "type": "n8n-nodes-base.supabase",
+  "typeVersion": 1,
+  "position": [1552, 1168],
+  "id": "f1303a55-7b62-4480-bfe0-48a9c5414eae",
+  "credentials": {
+    "supabaseApi": {
+      "id": "FgkX1mUgbmqk2Ny7",
+      "name": "Supabase account"
+    }
+  },
+  "parameters": {
+    "resource": "row",
+    "operation": "create",
+    "tableId": "n8n",
+    "dataToSend": "defineBelow",
+    "fieldsUi": {
+      "fieldValues": [
+        {
+          "fieldId": "Nom_annonce",
+          "fieldValue": "={{ $json.Nom_annonce }}"
+        },
+        {
+          "fieldId": "Url_Https",
+          "fieldValue": "={{ $json.Url_Https }}"
+        },
+        {
+          "fieldId": "personnes ont déjà ajouté cette annonce en favori",
+          "fieldValue": "={{ $json['personnes ont déjà ajouté cette annonce en favori'] }}"
+        },
+        {
+          "fieldId": "nombre de photos supplémentaires",
+          "fieldValue": "={{ $json['nombre de photos supplémentaires'] }}"
+        },
+        {
+          "fieldId": "Date de mise en publication",
+          "fieldValue": "={{ $json['Date de mise en publication'] }}"
+        },
+        {
+          "fieldId": "Heure de mise en publication",
+          "fieldValue": "={{ $json['Heure de mise en publication'] }}"
+        },
+        {
+          "fieldId": "Prix_affiche",
+          "fieldValue": "={{ $json.Prix_affiche }}"
+        },
+        {
+          "fieldId": "Photo_1",
+          "fieldValue": "={{ $json.Photo_1 }}"
+        },
+        {
+          "fieldId": "Photo_2",
+          "fieldValue": "={{ $json.Photo_2 }}"
+        },
+        {
+          "fieldId": "Photo_3",
+          "fieldValue": "={{ $json.Photo_3 }}"
+        },
+        {
+          "fieldId": "nom du vendeur pro",
+          "fieldValue": "={{ $json['nom du vendeur pro'] }}"
+        },
+        {
+          "fieldId": "année du modèle",
+          "fieldValue": "={{ $json['année du modèle'] }}"
+        },
+        {
+          "fieldId": "Kilométrage",
+          "fieldValue": "={{ $json.Kilométrage }}"
+        },
+        {
+          "fieldId": "Mise_en_circulation",
+          "fieldValue": "={{ $json.Mise_en_circulation }}"
+        },
+        {
+          "fieldId": "Cylindree_cc",
+          "fieldValue": "={{ $json.Cylindree_cc }}"
+        },
+        {
+          "fieldId": "Description de l'annonce",
+          "fieldValue": "={{ $json[\"Description de l'annonce\"] }}"
+        },
+        {
+          "fieldId": "Statut_annonce",
+          "fieldValue": "={{ $json.Statut_annonce }}"
+        },
+        {
+          "fieldId": "Nom_vendeur",
+          "fieldValue": "={{ $json.Nom_vendeur }}"
+        },
+        {
+          "fieldId": "nombre d'avis",
+          "fieldValue": "={{ $json[\"nombre d'avis\"] }}"
+        },
+        {
+          "fieldId": "Dernière activité",
+          "fieldValue": "={{ $json['Dernière activité'] }}"
+        },
+        {
+          "fieldId": "Paiement_ou_SIREN",
+          "fieldValue": "={{ $json.Paiement_ou_SIREN }}"
+        },
+        {
+          "fieldId": "Infos_vendeur",
+          "fieldValue": "={{ $json.Infos_vendeur }}"
+        },
+        {
+          "fieldId": "matched_marque",
+          "fieldValue": "={{ $json.matched_marque }}"
+        },
+        {
+          "fieldId": "matched_modele",
+          "fieldValue": "={{ $json.matched_modele }}"
+        },
+        {
+          "fieldId": "matched_generations",
+          "fieldValue": "={{ $json.matched_generations }}"
+        },
+        {
+          "fieldId": "generation_label",
+          "fieldValue": "={{ $json.generation_label }}"
+        },
+        {
+          "fieldId": "generation_year_start",
+          "fieldValue": "={{ $json.generation_year_start }}"
+        },
+        {
+          "fieldId": "generation_year_end",
+          "fieldValue": "={{ $json.generation_year_end }}"
+        },
+        {
+          "fieldId": "matched_score",
+          "fieldValue": "={{ $json.matched_score }}"
+        },
+        {
+          "fieldId": "matched_quality",
+          "fieldValue": "={{ $json.matched_quality }}"
+        },
+        {
+          "fieldId": "needs_review",
+          "fieldValue": "={{ $json.needs_review }}"
+        }
+      ]
+    }
+  }
+}

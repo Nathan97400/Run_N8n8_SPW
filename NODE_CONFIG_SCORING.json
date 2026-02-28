@@ -1,0 +1,199 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// COLLER ICI LE CONTENU DE CODE_SCORING_COMPLETUDE.js"
+      },
+      "id": "scoring-completude-node",
+      "name": "Scoring de Complétude",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data_quality_tier }}",
+                    "rightValue": "EXCELLENT",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "EXCELLENT → 1st Match"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data_quality_tier }}",
+                    "rightValue": "GOOD",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "GOOD → 2nd Match"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data_quality_tier }}",
+                    "rightValue": "MEDIUM",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "MEDIUM → 3rd Match"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data_quality_tier }}",
+                    "rightValue": "POOR",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "POOR → 4th Match"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data_quality_tier }}",
+                    "rightValue": "MINIMAL",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "MINIMAL → 5th Match"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "allMatchingOutputs": false
+        }
+      },
+      "id": "switch-routing-node",
+      "name": "Router par Qualité",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        0,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Scoring de Complétude": {
+      "main": [
+        [
+          {
+            "node": "Router par Qualité",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Router par Qualité": {
+      "main": [
+        [
+          {
+            "node": "1st Match",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "2nd Match",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "3rd Match",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "4th Match",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "5th Match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

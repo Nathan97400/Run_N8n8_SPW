@@ -1,0 +1,318 @@
+{
+  "name": "LBC Scraping - Progressive Matching v1 (avec Scoring + 3rd Match)",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [{ "mode": "everyMinute" }]
+        },
+        "simple": false,
+        "filters": { "includeDrafts": false },
+        "options": { "downloadAttachments": true }
+      },
+      "id": "gmail-trigger",
+      "name": "Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "position": [-976, 480],
+      "typeVersion": 1,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "hdQlj848jfuem258",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Code d'extraction JSON (depuis Workflow_IMPROVED_v2.json)\n// VOIR: Workflow_IMPROVED_v2.json ligne 38-47 pour le code complet"
+      },
+      "id": "extraction-json",
+      "name": "Extraction JSON Leboncoin",
+      "type": "n8n-nodes-base.code",
+      "position": [-784, 224],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "operation": "removeDuplicateInputItems",
+        "compare": "selectedFields",
+        "fieldsToCompare": "absolute href",
+        "options": { "removeOtherFields": false }
+      },
+      "id": "remove-duplicates",
+      "name": "Remove Duplicates",
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 2,
+      "position": [-600, 224]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Code de filtrage des lignes vides (depuis Workflow_IMPROVED_v2.json)\n// VOIR: Workflow_IMPROVED_v2.json ligne 68-79 pour le code complet"
+      },
+      "id": "filter-empty",
+      "name": "Filter Empty Rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-400, 224]
+    },
+    {
+      "parameters": {
+        "url": "https://nante.nathansouffrin7.workers.dev/",
+        "options": {
+          "response": {
+            "response": { "responseFormat": "json" }
+          }
+        }
+      },
+      "id": "get-modeles",
+      "name": "GET Modeles",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [-816, 672],
+      "typeVersion": 4
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [-200, 240],
+      "id": "merge",
+      "name": "Merge Annonces + Modèles"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ⭐ NOUVEAU NŒUD : SCORING DE COMPLÉTUDE\n// VOIR: CODE_SCORING_COMPLETUDE.js pour le code complet\n// Ce nœud évalue la qualité des données (0-100) et attribue un tier\n// INSTRUCTIONS : Copier le contenu de CODE_SCORING_COMPLETUDE.js ici"
+      },
+      "id": "scoring-completude",
+      "name": "⭐ Scoring de Complétude",
+      "type": "n8n-nodes-base.code",
+      "position": [0, 240],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "conditions": [{
+                  "leftValue": "={{ $json.data_quality_tier }}",
+                  "rightValue": "EXCELLENT",
+                  "operator": { "type": "string", "operation": "equals" }
+                }]
+              },
+              "renameOutput": true,
+              "outputKey": "EXCELLENT → 1st Match"
+            },
+            {
+              "conditions": {
+                "conditions": [{
+                  "leftValue": "={{ $json.data_quality_tier }}",
+                  "rightValue": "GOOD",
+                  "operator": { "type": "string", "operation": "equals" }
+                }]
+              },
+              "renameOutput": true,
+              "outputKey": "GOOD → 2nd Match"
+            },
+            {
+              "conditions": {
+                "conditions": [{
+                  "leftValue": "={{ $json.data_quality_tier }}",
+                  "rightValue": "MEDIUM",
+                  "operator": { "type": "string", "operation": "equals" }
+                }]
+              },
+              "renameOutput": true,
+              "outputKey": "MEDIUM → ⭐ 3rd Match"
+            },
+            {
+              "conditions": {
+                "conditions": [{
+                  "leftValue": "={{ $json.data_quality_tier }}",
+                  "rightValue": "POOR",
+                  "operator": { "type": "string", "operation": "equals" }
+                }]
+              },
+              "renameOutput": true,
+              "outputKey": "POOR → 4th Match"
+            },
+            {
+              "conditions": {
+                "conditions": [{
+                  "leftValue": "={{ $json.data_quality_tier }}",
+                  "rightValue": "MINIMAL",
+                  "operator": { "type": "string", "operation": "equals" }
+                }]
+              },
+              "renameOutput": true,
+              "outputKey": "MINIMAL → 5th Match"
+            }
+          ]
+        }
+      },
+      "id": "router-quality",
+      "name": "⭐ Router par Qualité",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [200, 240]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1st Match (EXCELLENT)\n// VOIR: Workflow_IMPROVED_v2.json ligne 900 pour le code complet"
+      },
+      "id": "1st-match",
+      "name": "1st Match (EXCELLENT)",
+      "type": "n8n-nodes-base.code",
+      "position": [400, 100],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "jsCode": "// 2nd Match (GOOD)\n// VOIR: Workflow_IMPROVED_v2.json ligne 887 pour le code complet"
+      },
+      "id": "2nd-match",
+      "name": "2nd Match (GOOD)",
+      "type": "n8n-nodes-base.code",
+      "position": [400, 240],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "jsCode": "// ⭐ NOUVEAU NŒUD : 3RD MATCH (MEDIUM)\n// VOIR: CODE_3RD_MATCH.js pour le code complet\n// Ce nœud utilise un matching permissif avec inférences et fuzzy matching\n// INSTRUCTIONS : Copier le contenu de CODE_3RD_MATCH.js ici"
+      },
+      "id": "3rd-match",
+      "name": "⭐ 3rd Match (MEDIUM - Permissif)",
+      "type": "n8n-nodes-base.code",
+      "position": [400, 380],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "jsCode": "// 4th Match (POOR)\n// VOIR: Workflow_IMPROVED_v2.json ligne 939 pour le code complet"
+      },
+      "id": "4th-match",
+      "name": "4th Match (POOR)",
+      "type": "n8n-nodes-base.code",
+      "position": [400, 520],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "jsCode": "// 5th Match (MINIMAL)\n// VOIR: Workflow_IMPROVED_v2.json ligne 913 pour le code complet"
+      },
+      "id": "5th-match",
+      "name": "5th Match (MINIMAL)",
+      "type": "n8n-nodes-base.code",
+      "position": [400, 660],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [600, 380],
+      "id": "merge-all-matches",
+      "name": "Merge All Matches"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Rename Columns\n// VOIR: Workflow_IMPROVED_v2.json ligne 926 pour le code complet"
+      },
+      "id": "rename-columns",
+      "name": "Rename Columns",
+      "type": "n8n-nodes-base.code",
+      "position": [800, 380],
+      "typeVersion": 2
+    }
+  ],
+  "connections": {
+    "Gmail Trigger": {
+      "main": [[
+        { "node": "Extraction JSON Leboncoin", "type": "main", "index": 0 },
+        { "node": "GET Modeles", "type": "main", "index": 0 }
+      ]]
+    },
+    "Extraction JSON Leboncoin": {
+      "main": [[
+        { "node": "Remove Duplicates", "type": "main", "index": 0 }
+      ]]
+    },
+    "Remove Duplicates": {
+      "main": [[
+        { "node": "Filter Empty Rows", "type": "main", "index": 0 }
+      ]]
+    },
+    "Filter Empty Rows": {
+      "main": [[
+        { "node": "Merge Annonces + Modèles", "type": "main", "index": 0 }
+      ]]
+    },
+    "GET Modeles": {
+      "main": [[
+        { "node": "Merge Annonces + Modèles", "type": "main", "index": 1 }
+      ]]
+    },
+    "Merge Annonces + Modèles": {
+      "main": [[
+        { "node": "⭐ Scoring de Complétude", "type": "main", "index": 0 }
+      ]]
+    },
+    "⭐ Scoring de Complétude": {
+      "main": [[
+        { "node": "⭐ Router par Qualité", "type": "main", "index": 0 }
+      ]]
+    },
+    "⭐ Router par Qualité": {
+      "main": [
+        [{ "node": "1st Match (EXCELLENT)", "type": "main", "index": 0 }],
+        [{ "node": "2nd Match (GOOD)", "type": "main", "index": 0 }],
+        [{ "node": "⭐ 3rd Match (MEDIUM - Permissif)", "type": "main", "index": 0 }],
+        [{ "node": "4th Match (POOR)", "type": "main", "index": 0 }],
+        [{ "node": "5th Match (MINIMAL)", "type": "main", "index": 0 }]
+      ]
+    },
+    "1st Match (EXCELLENT)": {
+      "main": [[
+        { "node": "Merge All Matches", "type": "main", "index": 0 }
+      ]]
+    },
+    "2nd Match (GOOD)": {
+      "main": [[
+        { "node": "Merge All Matches", "type": "main", "index": 1 }
+      ]]
+    },
+    "⭐ 3rd Match (MEDIUM - Permissif)": {
+      "main": [[
+        { "node": "Merge All Matches", "type": "main", "index": 2 }
+      ]]
+    },
+    "4th Match (POOR)": {
+      "main": [[
+        { "node": "Merge All Matches", "type": "main", "index": 3 }
+      ]]
+    },
+    "5th Match (MINIMAL)": {
+      "main": [[
+        { "node": "Merge All Matches", "type": "main", "index": 4 }
+      ]]
+    },
+    "Merge All Matches": {
+      "main": [[
+        { "node": "Rename Columns", "type": "main", "index": 0 }
+      ]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "tags": [
+    {
+      "createdAt": "2026-02-15T00:00:00.000Z",
+      "updatedAt": "2026-02-15T00:00:00.000Z",
+      "id": "progressive-matching",
+      "name": "Progressive Matching"
+    }
+  ]
+}

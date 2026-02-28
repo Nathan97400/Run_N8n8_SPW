@@ -1,0 +1,20 @@
+{
+  "name": "Create a row1",
+  "type": "n8n-nodes-base.supabase",
+  "typeVersion": 1,
+  "position": [1552, 1168],
+  "id": "f1303a55-7b62-4480-bfe0-48a9c5414eae",
+  "credentials": {
+    "supabaseApi": {
+      "id": "FgkX1mUgbmqk2Ny7",
+      "name": "Supabase account"
+    }
+  },
+  "parameters": {
+    "resource": "row",
+    "operation": "create",
+    "tableId": "n8n",
+    "dataToSend": "autoMapInputData",
+    "inputsToIgnore": ""
+  }
+}
